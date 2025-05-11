@@ -290,6 +290,117 @@
             { type: "fill-in-the-blank", question: "The ____ ____ algorithm is a greedy approach for the Partial Digest Problem.", answer: "practical PDP", explanation: "While the brute-force PDP explores all possibilities, practical versions use heuristics." },
             { type: "multiple-choice", question: "The 'Central Dogma' of molecular biology describes information flow. Which is the correct order?", options: ["Protein -> RNA -> DNA", "RNA -> DNA -> Protein", "DNA -> Protein -> RNA", "DNA -> RNA -> Protein"], answer: "DNA -> RNA -> Protein", explanation: "DNA is transcribed to RNA, which is translated to protein." }
         ];
+// --- Added Review Questions from Previous Exams ---
+const reviewQuestions = [
+    // Exam 2: Motif Finding
+    {
+        type: "multiple-choice",
+        question: "Which statement correctly defines the motif finding problem?",
+        options: [
+            "Finding the longest L-mer in a single sequence",
+            "Finding short recurring patterns of length L that are most conserved across multiple sequences",
+            "Finding all possible substrings of length L in a sequence",
+            "Finding the shortest path between motifs in a graph"
+        ],
+        answer: "Finding short recurring patterns of length L that are most conserved across multiple sequences",
+        explanation: "Motif finding seeks L-mers that are statistically overrepresented or highly conserved across a collection of DNA or protein sequences."
+    },
+    {
+        type: "fill-in-the-blank",
+        question: "Given p sequences of length k and L-mer length L, the total search space is (k − L + 1) raised to the power ____. ",
+        answer: "p",
+        explanation: "You choose one starting position in each of the p sequences, so there are (k − L + 1)^p combinations."
+    },
+    {
+        type: "fill-in-the-blank",
+        question: "The strength of a motif with consensus score S in p sequences of length L is (S / (p × L)) × 100%. In the example where S=12, p=4, and L=5, the strength is ____%.",
+        answer: "60",
+        explanation: "Strength = (12 / (4 × 5)) × 100% = 60%."
+    },
+
+    // Exam 2: Median String
+    {
+        type: "fill-in-the-blank",
+        question: "The median string of length L minimizes the total sum of ____ distances to each L-mer in the motif instance set.",
+        answer: "Hamming",
+        explanation: "By definition, the median string minimizes the sum of Hamming distances to the given set of L-mers."
+    },
+    {
+        type: "multiple-choice",
+        question: "In motif finding, maximizing the consensus score over p sequences of length L is equivalent to:",
+        options: [
+            "Maximizing the total Hamming distance to consensus",
+            "Minimizing the total Hamming distance to consensus",
+            "Maximizing the number of mismatches",
+            "Minimizing the number of sequences containing the motif"
+        ],
+        answer: "Minimizing the total Hamming distance to consensus",
+        explanation: "Consensus score = p × L − total Hamming distance, so maximizing score minimizes distance."
+    },
+
+    // Exam 2: Gap Penalty Models
+    {
+        type: "fill-in-the-blank",
+        question: "Affine gap penalty for a gap of length k is given by: Gap_open + k × ____.",
+        answer: "Gap_extension",
+        explanation: "Affine penalty: penalty = Gap_open + (k × Gap_extension)."
+    },
+    {
+        type: "multiple-choice",
+        question: "A linear gap penalty model is a special case of the affine model when:",
+        options: [
+            "Gap_extension = 0",
+            "Gap_open = 0",
+            "Gap_open = Gap_extension",
+            "Gap_length = 1"
+        ],
+        answer: "Gap_open = 0",
+        explanation: "When Gap_open is zero, penalty = k × Gap_extension, a linear function of k."
+    },
+
+    // Exam 1: Gene Expression Basics
+    {
+        type: "fill-in-the-blank",
+        question: "The process that removes introns from pre-mRNA and joins exons is called ____.",
+        answer: "splicing",
+        explanation: "Splicing produces mature mRNA by removing introns and joining exons."
+    },
+    {
+        type: "multiple-choice",
+        question: "A mature mRNA has which of these features at its ends?",
+        options: [
+            "5' cap and poly-A tail",
+            "5' cap and 5' UTR only",
+            "Poly-A tail and promoter",
+            "5' UTR and introns"
+        ],
+        answer: "5' cap and poly-A tail",
+        explanation: "mRNA features include a 5' cap and 3' poly-A tail for stability and export."
+    },
+    {
+        type: "fill-in-the-blank",
+        question: "Translate the coding DNA sequence ATC TCG CTA ATT TAA (stop) into amino acids (using the standard genetic code): ____-____-____-____.",
+        answer: "I-S-L-I",
+        explanation: "ATC=Isoleucine, TCG=Serine, CTA=Leucine, ATT=Isoleucine; TAA is a stop codon."
+    },
+
+    // Exam 1: Gene Annotation
+    {
+        type: "fill-in-the-blank",
+        question: "For a genomic sequence, a BED entry chr-xx 5 12 gene1 0 −, the nucleotide sequence extracted is ____.",
+        answer: "GGATCTAA",
+        explanation: "Bases from positions 5 (0-based) up to but not including 12 yield GGATCTAA."
+    },
+    {
+        type: "fill-in-the-blank",
+        question: "For the annotation chr-xx 10 16 gene2 0 +, the extracted sequence is ____.",
+        answer: "CTACAG",
+        explanation: "Bases from positions 10 to 16 (0-based half-open) yield CTACAG."
+    }
+];
+
+// Then merge:
+activeBaseQuestions = [...defaultQuestions, ...reviewQuestions];
 
         // --- State Variables ---
         let masterQuestionList = []; 
