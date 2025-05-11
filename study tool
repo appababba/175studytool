@@ -399,8 +399,7 @@ const reviewQuestions = [
     }
 ];
 
-// Then merge:
-activeBaseQuestions = [...defaultQuestions, ...reviewQuestions];
+
 
         // --- State Variables ---
         let masterQuestionList = []; 
@@ -408,7 +407,7 @@ activeBaseQuestions = [...defaultQuestions, ...reviewQuestions];
         let currentQuestionIndexInQueue = 0;
         let score = 0;
         let isRetryMode = false; 
-        let activeBaseQuestions = [...defaultQuestions]; 
+        let activeBaseQuestions = [...defaultQuestions, ...reviewQuestions];
         let currentlyFocusedRadioIndexInQuestion = -1;
 
         // --- DOM Elements ---
