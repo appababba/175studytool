@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bioinformatics Study Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            processEscapes: true
+          },
+          svg: {
+            fontCache: 'global'
+          }
+        };
+    </script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -27,11 +41,8 @@
         .options-container label:hover {
             background-color: #374151; /* gray-700 for dark theme */
         }
-        /* Style for the label when its radio button is focused via keyboard */
         .options-container input[type="radio"]:focus ~ span.option-text, 
         .options-container label.focused-option-style { 
-            /* The label itself won't get focus, but we can style it based on radio focus */
-            /* Or add a class to the label dynamically */
             background-color: #374151; /* gray-700 */
             outline: 2px solid #38BDF8; /* sky-400 */
             outline-offset: -1px;
@@ -44,9 +55,22 @@
         .incorrect-answer { color: #EF4444; font-weight: bold; }
         .info-feedback { color: #F59E0B; font-weight: normal; }
 
+        #skip-to-question-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         @media (max-width: 640px) {
             .main-container { padding: 1rem; }
             h1 { font-size: 1.5rem; }
+            #skip-navigation {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            #skip-to-question-select {
+                margin-top: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -63,7 +87,7 @@
             </div>
 
             <div id="answer-area" class="mb-4">
-                </div>
+            </div>
 
             <button id="submit-btn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
                 Submit Answer
@@ -84,8 +108,14 @@
             <p class="text-sm text-slate-400">Question Progress: <span id="current-q-progress">0 of 0</span></p>
             <p class="text-sm text-slate-400">Overall Score: <span id="score">0</span> / <span id="total-master-questions">0</span></p>
         </div>
-
+        
+        <div id="skip-navigation" class="mt-4 text-center">
+            <label for="skip-to-question-select" class="text-sm text-slate-400 mr-2">Skip to Question:</label>
+            <select id="skip-to-question-select" class="bg-slate-700 text-slate-200 border border-slate-600 rounded-md p-1 text-sm focus:ring-sky-500 focus:border-sky-500">
+                </select>
         </div>
+
+    </div>
 
     <footer class="mt-8 text-center">
         <p class="text-xs text-slate-500">Happy Studying! Inspired by the Math Academy Way.</p>
@@ -119,7 +149,7 @@
             { type: "multiple-choice", question: "An algorithm that makes the best apparent choice at each step, without regard for future consequences, is known as a ____ algorithm.", options: ["Dynamic Programming", "Recursive", "Greedy", "Branch and Bound"], answer: "Greedy", explanation: "This approach is often fast but may not yield a globally optimal solution." },
             { type: "fill-in-the-blank", question: "The algorithmic technique of solving a complex problem by breaking it down into simpler, overlapping subproblems and storing the solutions to these subproblems to avoid redundant computation is called ____ ____.", answer: "Dynamic Programming", explanation: "This is fundamental to algorithms like Needleman-Wunsch and Smith-Waterman." },
             { type: "fill-in-the-blank", question: "The ____ and ____ algorithm is a systematic method for solving optimization problems by exploring a tree of possibilities and pruning branches that cannot lead to a better solution than one already found.", answer: "Branch; Bound", explanation: "It combines enumeration with intelligent pruning." },
-            { type: "multiple-choice", question: "What does Big-O notation, such as O(n) or O(n²), primarily describe about an algorithm?", options: ["Its accuracy", "Its ease of implementation", "How its runtime or space requirements scale with increasing input size", "The specific programming language used"], answer: "How its runtime or space requirements scale with increasing input size", explanation: "It characterizes the algorithm's asymptotic efficiency." },
+            { type: "multiple-choice", question: "What does Big-O notation, such as $O(n)$ or $O(n^2)$, primarily describe about an algorithm?", options: ["Its accuracy", "Its ease of implementation", "How its runtime or space requirements scale with increasing input size", "The specific programming language used"], answer: "How its runtime or space requirements scale with increasing input size", explanation: "It characterizes the algorithm's asymptotic efficiency." },
             { type: "fill-in-the-blank", question: "Identifying short, conserved sequence patterns, often with biological significance (like binding sites), within a set of biological sequences is the goal of ____ ____.", answer: "Motif Finding", explanation: "These motifs can be crucial for gene regulation." },
             { type: "multiple-choice", question: "Which type of sequence alignment aims to align entire sequences from end to end, often used for closely related sequences?", options: ["Local Alignment (e.g., Smith-Waterman)", "Global Alignment (e.g., Needleman-Wunsch)", "Multiple Sequence Alignment", "Heuristic Alignment"], answer: "Global Alignment (e.g., Needleman-Wunsch)", explanation: "It seeks the best alignment over the full length of both sequences." },
             { type: "fill-in-the-blank", question: "The ____-____ algorithm is used to find the optimal local alignment, identifying the most similar subsequences between two sequences.", answer: "Smith-Waterman", explanation: "This is useful for finding conserved domains or regions in otherwise divergent sequences." },
@@ -130,7 +160,7 @@
             
             { type: "multiple-choice", question: "The two strands of a DNA double helix are said to be ____ to each other.", options: ["Identical", "Parallel", "Antiparallel", "Perpendicular"], answer: "Antiparallel", explanation: "One strand runs 5' to 3', and the other runs 3' to 5'." },
             { type: "fill-in-the-blank", question: "The process by which a DNA molecule makes an identical copy of itself is called ____.", answer: "replication", explanation: "Essential for cell division and inheritance." },
-            { type: "multiple-choice", question: "An algorithm with O(1) time complexity means its runtime is:", options: ["Linearly proportional to input size", "Logarithmically proportional to input size", "Constant, regardless of input size", "Exponentially proportional to input size"], answer: "Constant, regardless of input size", explanation: "This is the most efficient time complexity." },
+            { type: "multiple-choice", question: "An algorithm with $O(1)$ time complexity means its runtime is:", options: ["Linearly proportional to input size", "Logarithmically proportional to input size", "Constant, regardless of input size", "Exponentially proportional to input size"], answer: "Constant, regardless of input size", explanation: "This is the most efficient time complexity." },
             { type: "fill-in-the-blank", question: "A ____ is a short, conserved sequence element often found in the regulatory regions of genes.", answer: "motif", explanation: "These can be binding sites for transcription factors." },
             { type: "multiple-choice", question: "The 'strength' of a motif is often measured by its:", options: ["Length in base pairs", "Degree of conservation (e.g., consensus score)", "Distance from the start codon", "Number of G-C pairs"], answer: "Degree of conservation (e.g., consensus score)" },
             { type: "fill-in-the-blank", question: "A ____-driven approach to motif finding enumerates all possible patterns and scores them.", answer: "pattern", explanation: "This contrasts with sample-driven approaches." },
@@ -214,11 +244,10 @@
 
             { type: "fill-in-the-blank", question: "In BLAST, the statistical significance of an alignment is primarily assessed using the ____.", answer: "E-value", explanation: "The E-value depends on the score, database size, and query length." },
             { type: "multiple-choice", question: "A 'two-hit' method in BLAST seeding is designed to:", options: ["Increase alignment speed by processing two sequences at once", "Reduce the number of false positive extensions by requiring two nearby initial matches", "Allow for gapped alignments directly from seeds", "Double the word size for increased specificity"], answer: "Reduce the number of false positive extensions by requiring two nearby initial matches", explanation: "This increases the likelihood that the seeded region is part of a true homology." },
-
             { type: "fill-in-the-blank", question: "In the dynamic programming solution for the Exon Chaining problem, $S_i = \\max(S_{i-1}, S_j + w_i)$, $w_i$ represents the ____ of the $i$-th putative exon.", answer: "score", explanation: "$S_j$ is the score of the best chain ending before exon $i$ that is compatible with exon $i$." },
             { type: "multiple-choice", question: "Spliced alignment algorithms often use a 3D dynamic programming table. What do the three dimensions typically represent?", options: ["Genomic position, Target protein position, Exon number", "Genomic position, Target protein position, Gap penalty state", "Chromosome, Gene, Exon", "Read length, Read position, Quality score"], answer: "Genomic position, Target protein position, Exon number", explanation: "Or a state indicating if currently aligning within an exon or an intron, or considering a jump between exons." },
 
-            { type: "fill-in-the-blank", question: "If a gene has a raw read count of 500, its length is 2 Kbp, and the total mapped reads in the experiment are 10 Million, its RPKM value is ____.", answer: "25", explanation: "RPKM = (500 * 10^9) / (2000 * 10 * 10^6) = 500 / (20) = 25." },
+            { type: "fill-in-the-blank", question: "If a gene has a raw read count of 500, its length is 2 Kbp, and the total mapped reads in the experiment are 10 Million, its RPKM value is ____. (Calculate: $(count \\times 10^9) / (length \\times totalReads)$)", answer: "25", explanation: "RPKM = (500 * 10^9) / (2000 * 10 * 10^6) = 500 / (20) = 25." },
             { type: "multiple-choice", question: "Why is it important to account for dead zones when calculating gene expression from RNA-Seq data?", options: ["Dead zones always indicate highly expressed genes.", "Reads from dead zones are longer than other reads.", "Failure to account for them can lead to underestimation of expression for genes overlapping dead zones if total length is used.", "Dead zones are only found in non-coding RNAs."], answer: "Failure to account for them can lead to underestimation of expression for genes overlapping dead zones if total length is used.", explanation: "Using effective (mappable) length provides a more accurate denominator for RPKM." },
             { type: "fill-in-the-blank", question: "The process of 'collapsing exon annotations' in RNA-Seq preprocessing aims to create a ____ set of exonic regions for read counting.", answer: "non-redundant", explanation: "This avoids counting reads multiple times if exons from different transcripts overlap." },
 
@@ -245,7 +274,7 @@
             { type: "fill-in-the-blank", question: "In the context of gene prediction, 'ab initio' methods predict genes based on ____ signals within the DNA sequence itself, without relying on external homologous sequences.", answer: "intrinsic", explanation: "These methods look for codon usage, splice sites, promoter signals etc." },
             { type: "multiple-choice", question: "What is the main purpose of the Poly-A tail on a eukaryotic mRNA?", options: ["To initiate translation", "To mark the start of an intron", "To increase mRNA stability and facilitate its export from the nucleus", "To bind to tRNA"], answer: "To increase mRNA stability and facilitate its export from the nucleus", explanation: "It also plays a role in translation initiation." },
             { type: "fill-in-the-blank", question: "The ____ problem is to find a short, conserved pattern (L-mer) that appears in multiple DNA sequences, often with some variations.", answer: "motif finding", explanation: "These motifs can be regulatory elements like transcription factor binding sites." },
-            { type: "multiple-choice", question: "When using BLAST, a very low E-value (e.g., e-100) for an alignment suggests that the similarity is:", options: ["Likely due to random chance", "Statistically highly significant and unlikely due to chance", "Of moderate significance", "An indication of a poor quality query sequence"], answer: "Statistically highly significant and unlikely due to chance", explanation: "It means it's very improbable to find such a match by chance alone." },
+            { type: "multiple-choice", question: "When using BLAST, a very low E-value (e.g., $e^{-100}$) for an alignment suggests that the similarity is:", options: ["Likely due to random chance", "Statistically highly significant and unlikely due to chance", "Of moderate significance", "An indication of a poor quality query sequence"], answer: "Statistically highly significant and unlikely due to chance", explanation: "It means it's very improbable to find such a match by chance alone." },
             { type: "fill-in-the-blank", question: "The process of converting the information from an mRNA molecule into a sequence of amino acids is called ____.", answer: "translation", explanation: "This occurs on ribosomes and involves tRNA." },
             { type: "multiple-choice", question: "Which of these is a common application of suffix trees in bioinformatics?", options: ["Predicting protein folding", "Finding exact matches of short DNA sequences (e.g., primers) in a genome", "Calculating RNA secondary structure energy", "Simulating population genetics"], answer: "Finding exact matches of short DNA sequences (e.g., primers) in a genome", explanation: "Suffix trees excel at rapid exact string matching." },
             { type: "fill-in-the-blank", question: "In RNA-Seq, if a read maps to a region created by joining the end of exon 1 and the start of exon 2, it's considered a ____ read.", answer: "junction", explanation: "These reads provide evidence for splicing events." },
@@ -257,7 +286,7 @@
             { type: "fill-in-the-blank", question: "The ____ format is commonly used for storing gene annotations, including chromosome, start, end, and strand information.", answer: "BED", explanation: "It's a simple, tab-delimited format." },
             { type: "multiple-choice", question: "What does the 'P' in RPKM stand for?", options: ["Protein", "Per", "Paired-end", "Polymerase"], answer: "Per", explanation: "Reads Per Kilobase of exon model per Million mapped reads." },
             { type: "fill-in-the-blank", question: "A common task in bioinformatics is to search a large sequence ____ (e.g., GenBank) for sequences similar to a query sequence.", answer: "database", explanation: "Tools like BLAST are designed for this purpose." },
-            { type: "multiple-choice", question: "If an algorithm has a time complexity of O(n^2), how does its runtime change if the input size 'n' doubles?", options: ["It doubles", "It quadruples", "It stays the same", "It increases by a factor of n"], answer: "It quadruples", explanation: "Because (2n)^2 = 4n^2." },
+            { type: "multiple-choice", question: "If an algorithm has a time complexity of $O(n^2)$, how does its runtime change if the input size 'n' doubles?", options: ["It doubles", "It quadruples", "It stays the same", "It increases by a factor of n"], answer: "It quadruples", explanation: "Because $(2n)^2 = 4n^2$." },
             { type: "fill-in-the-blank", question: "The ____ ____ algorithm is a greedy approach for the Partial Digest Problem.", answer: "practical PDP", explanation: "While the brute-force PDP explores all possibilities, practical versions use heuristics." },
             { type: "multiple-choice", question: "The 'Central Dogma' of molecular biology describes information flow. Which is the correct order?", options: ["Protein -> RNA -> DNA", "RNA -> DNA -> Protein", "DNA -> Protein -> RNA", "DNA -> RNA -> Protein"], answer: "DNA -> RNA -> Protein", explanation: "DNA is transcribed to RNA, which is translated to protein." }
         ];
@@ -269,7 +298,7 @@
         let score = 0;
         let isRetryMode = false; 
         let activeBaseQuestions = [...defaultQuestions]; 
-        let currentlyFocusedRadioIndexInQuestion = -1; // Persists for the current MC question
+        let currentlyFocusedRadioIndexInQuestion = -1;
 
         // --- DOM Elements ---
         const questionTextElement = document.getElementById('question-text');
@@ -282,6 +311,7 @@
         const currentQProgressElement = document.getElementById('current-q-progress');
         const scoreElement = document.getElementById('score');
         const totalMasterQuestionsElement = document.getElementById('total-master-questions');
+        const skipToQuestionSelect = document.getElementById('skip-to-question-select'); // Added for skip functionality
 
         // --- Functions ---
         function shuffleArray(array) {
@@ -290,6 +320,20 @@
                 [array[i], array[j]] = [array[j], array[i]];
             }
         }
+
+        // Function to populate the skip-to-question dropdown
+        function populateSkipDropdown() {
+            if (!skipToQuestionSelect) return;
+            skipToQuestionSelect.innerHTML = ''; // Clear existing options
+
+            masterQuestionList.forEach((_, index) => {
+                const option = document.createElement('option');
+                option.value = index; // Value is the question index
+                option.textContent = `Question ${index + 1}`;
+                skipToQuestionSelect.appendChild(option);
+            });
+        }
+
 
         function initializeQuiz() {
             masterQuestionList = activeBaseQuestions.map(q => ({
@@ -301,6 +345,9 @@
             currentQuestionIndexInQueue = 0;
             score = 0;
             isRetryMode = false;
+            if (skipToQuestionSelect) { // Enable dropdown at the start of a new quiz
+                skipToQuestionSelect.disabled = false;
+            }
             currentlyFocusedRadioIndexInQuestion = -1;
 
 
@@ -315,12 +362,14 @@
             nextBtn.classList.add('hidden');
 
             if (masterQuestionList.length > 0) {
+                populateSkipDropdown(); // Populate the dropdown
                 loadQuestion();
             } else {
                 questionTextElement.textContent = "No questions available.";
                 answerAreaElement.innerHTML = "";
                 submitBtn.classList.add('hidden');
                 nextBtn.classList.add('hidden');
+                if (skipToQuestionSelect) skipToQuestionSelect.innerHTML = ''; // Clear dropdown if no questions
                 updateProgress(); 
             }
         }
@@ -340,25 +389,46 @@
                     shuffleArray(currentQuestionQueue); 
                     currentQuestionIndexInQueue = 0;
                     isRetryMode = true;
+                    if (skipToQuestionSelect) skipToQuestionSelect.disabled = true; // Disable dropdown in retry mode
                     feedbackTextElement.textContent = "Retrying missed questions...";
                     feedbackTextElement.className = 'info-feedback text-center'; 
                 } else {
                     displayEndOfQuiz();
+                    if (skipToQuestionSelect) skipToQuestionSelect.disabled = false; // Re-enable dropdown when quiz ends
                     return;
                 }
             }
 
             const questionWrapper = currentQuestionQueue[currentQuestionIndexInQueue];
             const currentQuestion = questionWrapper.originalData;
-            currentlyFocusedRadioIndexInQuestion = -1; // Reset for new question
+            currentlyFocusedRadioIndexInQuestion = -1;
 
             questionTextElement.textContent = currentQuestion.question;
+            
+            if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
+                MathJax.typesetPromise([questionTextElement]).catch(function (err) {
+                    console.error('MathJax typesetting error: ' + err.message);
+                });
+            }
+            
+            // Update skip dropdown selection if not in retry mode
+            if (skipToQuestionSelect) {
+                if (isRetryMode) {
+                    skipToQuestionSelect.disabled = true;
+                } else {
+                    skipToQuestionSelect.disabled = false;
+                    // currentQuestionIndexInQueue here refers to the index in masterQuestionList
+                    // because currentQuestionQueue is masterQuestionList when not in retry mode
+                    skipToQuestionSelect.value = currentQuestionIndexInQueue;
+                }
+            }
+
+
             answerAreaElement.innerHTML = ''; 
             
             if (!feedbackTextElement.textContent.includes("Retrying missed questions...")) {
                  clearFeedback();
             } else if (currentQuestionIndexInQueue === 0 && feedbackTextElement.textContent.includes("Retrying missed questions...")) {
-                // Keep "Retrying..."
             } else {
                 clearFeedback(); 
             }
@@ -374,36 +444,36 @@
                 input.className = 'w-full p-3 border border-slate-600 rounded-lg bg-slate-700 text-slate-200 focus:ring-sky-500 focus:border-sky-500';
                 input.setAttribute('aria-label', 'Your answer for fill in the blank');
                 answerAreaElement.appendChild(input);
-input.addEventListener('keydown', function(event) {
-    if (
-        event.key === 'Enter' &&
-        input.value.trim() !== '' &&      // only if non-empty
-        !submitBtn.disabled
-    ) {
-        event.preventDefault();           // stop any default form submits
-        checkAnswer();
-    }
-});
-                setTimeout(() => input.focus(), 0);
+                input.addEventListener('keydown', function(event) {
+                    if (
+                        event.key === 'Enter' &&
+                        input.value.trim() !== '' &&      
+                        !submitBtn.disabled
+                    ) {
+                        event.preventDefault();           
+                        checkAnswer();
+                    }
+                });
+                setTimeout(() => input.focus(), 0); 
             } else if (currentQuestion.type === "multiple-choice") {
                 const optionsContainer = document.createElement('div');
                 optionsContainer.className = 'options-container space-y-2';
                 
                 const shuffledOptions = [...currentQuestion.options]; 
-                shuffleArray(shuffledOptions);
+                shuffleArray(shuffledOptions); 
                 const radioButtons = []; 
                 const radioLabels = [];
 
                 shuffledOptions.forEach((option, index) => {
                     const label = document.createElement('label');
                     label.className = 'block p-3 border border-slate-600 rounded-lg hover:bg-slate-600 cursor-pointer transition-colors text-slate-300';
-                    label.id = `label-option-${currentQuestionIndexInQueue}-${index}`; // Unique ID for label
+                    label.id = `label-option-${currentQuestionIndexInQueue}-${index}`; 
                     
                     const radio = document.createElement('input');
                     radio.type = 'radio';
-                    radio.name = 'mc-option';
+                    radio.name = 'mc-option'; 
                     radio.value = option;
-                    radio.id = `option-${currentQuestionIndexInQueue}-${index}`; // Unique ID for radio
+                    radio.id = `option-${currentQuestionIndexInQueue}-${index}`; 
                     radio.className = 'mr-2 accent-sky-500';
                     
                     const optionTextNode = document.createElement('span');
@@ -417,12 +487,12 @@ input.addEventListener('keydown', function(event) {
                     radioLabels.push(label);
 
                     radio.addEventListener('change', () => { 
-                        if (!submitBtn.disabled) submitBtn.focus();
-                        radioLabels.forEach(lbl => lbl.classList.remove('focused-option-style'));
-                        label.classList.add('focused-option-style');
+                        if (!submitBtn.disabled) submitBtn.focus(); 
+                        radioLabels.forEach(lbl => lbl.classList.remove('focused-option-style')); 
+                        label.classList.add('focused-option-style'); 
                         currentlyFocusedRadioIndexInQuestion = radioButtons.indexOf(radio);
                     });
-                    radio.addEventListener('focus', () => { // For visual feedback on focus
+                    radio.addEventListener('focus', () => { 
                         radioLabels.forEach(lbl => lbl.classList.remove('focused-option-style'));
                         label.classList.add('focused-option-style');
                         currentlyFocusedRadioIndexInQuestion = radioButtons.indexOf(radio);
@@ -431,13 +501,13 @@ input.addEventListener('keydown', function(event) {
                 answerAreaElement.appendChild(optionsContainer);
                 
                 if(radioButtons.length > 0) {
-                     setTimeout(() => { // Ensure elements are in DOM
+                     setTimeout(() => { 
                         currentlyFocusedRadioIndexInQuestion = 0;
                         radioButtons[0].focus();
                      }, 0);
                 }
             }
-            updateProgress();
+            updateProgress(); 
         }
 
         function checkAnswer() {
@@ -465,14 +535,14 @@ input.addEventListener('keydown', function(event) {
                 } else {
                     feedbackTextElement.textContent = "Please select an option.";
                     feedbackTextElement.className = 'incorrect-answer text-center';
-                    return;
+                    return; 
                 }
             }
 
             if (isCorrect) {
                 feedbackTextElement.textContent = "Correct!";
                 feedbackTextElement.className = 'correct-answer text-center';
-                if (!questionWrapper.answeredCorrectlyInSession) {
+                if (!questionWrapper.answeredCorrectlyInSession) { 
                     score++;
                     questionWrapper.answeredCorrectlyInSession = true; 
                 }
@@ -490,7 +560,7 @@ input.addEventListener('keydown', function(event) {
             submitBtn.disabled = true;
             submitBtn.classList.add('hidden');
             nextBtn.classList.remove('hidden');
-            setTimeout(() => nextBtn.focus(), 0);
+            setTimeout(() => nextBtn.focus(), 0); 
         }
 
         function nextQuestionLogic() { 
@@ -506,11 +576,22 @@ input.addEventListener('keydown', function(event) {
                 currentDisplayNumber = 0;
                  currentQProgressElement.textContent = `0 of 0`;
             } else {
-                currentDisplayNumber = currentQuestionIndexInQueue + 1;
-                let displayNum = Math.min(currentDisplayNumber, questionsInCurrentQueue);
+                 // If in retry mode, progress is based on the retry queue length.
+                 // Otherwise, it's based on the master list length for the "X of Y" display.
+                const totalForDisplay = isRetryMode ? questionsInCurrentQueue : masterQuestionList.length;
+                const currentForDisplay = isRetryMode ? currentQuestionIndexInQueue + 1 : 
+                                          (currentQuestionQueue === masterQuestionList ? currentQuestionIndexInQueue + 1 : // if navigating master
+                                          masterQuestionList.indexOf(currentQuestionQueue[currentQuestionIndexInQueue]) + 1); // if somehow else
+
+                let displayNum = Math.min(currentQuestionIndexInQueue + 1, questionsInCurrentQueue); // This is for the current queue
+                
                 let progressText = `${displayNum} of ${questionsInCurrentQueue}`;
-                 if (isRetryMode) {
+
+                if (isRetryMode) {
                     progressText += " (Retry Round)";
+                } else {
+                    // Show progress relative to the master list if not in retry mode
+                    progressText = `${currentQuestionIndexInQueue + 1} of ${masterQuestionList.length}`;
                 }
                 currentQProgressElement.textContent = progressText;
             }
@@ -534,6 +615,9 @@ input.addEventListener('keydown', function(event) {
             submitBtn.classList.add('hidden');
             nextBtn.classList.remove('hidden');
             nextBtn.textContent = "Restart Quiz"; 
+            if (skipToQuestionSelect) { // Re-enable dropdown when quiz truly ends
+                skipToQuestionSelect.disabled = false;
+            }
         }
 
         // --- Event Listeners ---
@@ -541,11 +625,30 @@ input.addEventListener('keydown', function(event) {
         
         nextBtn.addEventListener('click', () => {
             if (nextBtn.textContent === "Restart Quiz") {
-                initializeQuiz();
+                initializeQuiz(); 
             } else {
-                nextQuestionLogic();
+                nextQuestionLogic(); 
             }
         });
+
+        // Event listener for the skip-to-question dropdown
+        if (skipToQuestionSelect) {
+            skipToQuestionSelect.addEventListener('change', (event) => {
+                const selectedIndex = parseInt(event.target.value);
+                if (!isNaN(selectedIndex) && selectedIndex >= 0 && selectedIndex < masterQuestionList.length) {
+                    isRetryMode = false; // Exit retry mode
+                    currentQuestionQueue = [...masterQuestionList]; // Reset to use the master list
+                    currentQuestionIndexInQueue = selectedIndex;
+                    
+                    // Clear any "Retrying..." feedback message explicitly
+                    feedbackTextElement.textContent = '';
+                    feedbackTextElement.className = 'text-center text-slate-300'; // Reset class
+
+                    loadQuestion(); // Load the selected question
+                                    // loadQuestion will handle enabling the dropdown
+                }
+            });
+        }
 
         document.addEventListener('keydown', function(event) {
             const questionWrapper = (currentQuestionQueue.length > 0 && currentQuestionIndexInQueue < currentQuestionQueue.length) ? currentQuestionQueue[currentQuestionIndexInQueue] : null;
@@ -553,30 +656,28 @@ input.addEventListener('keydown', function(event) {
             
             if (event.key === 'Enter') {
                 if (!nextBtn.classList.contains('hidden') && document.activeElement === nextBtn) { 
-                    event.preventDefault();
+                    event.preventDefault(); 
                     nextBtn.click();
                 } else if (!submitBtn.classList.contains('hidden') && !submitBtn.disabled && document.activeElement === submitBtn) {
                      event.preventDefault();
                      checkAnswer();
                 }
-                // Fill-in-the-blank Enter is handled by its own listener
             } else if (currentQuestion && currentQuestion.type === "multiple-choice") {
                 const radioButtons = Array.from(answerAreaElement.querySelectorAll('input[type="radio"]'));
                 if (radioButtons.length === 0) return;
 
                 if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-                    event.preventDefault();
+                    event.preventDefault(); 
                     let nextIndex;
                     if (event.key === 'ArrowUp') {
                         nextIndex = (currentlyFocusedRadioIndexInQuestion <= 0) ? radioButtons.length - 1 : currentlyFocusedRadioIndexInQuestion - 1;
-                    } else { // ArrowDown
+                    } else { 
                         nextIndex = (currentlyFocusedRadioIndexInQuestion >= radioButtons.length - 1 || currentlyFocusedRadioIndexInQuestion < 0) ? 0 : currentlyFocusedRadioIndexInQuestion + 1;
                     }
                     
                     if (radioButtons[nextIndex]) {
                         radioButtons[nextIndex].checked = true;
-                        radioButtons[nextIndex].focus(); // This will trigger the radio's focus listener for styling
-                        // Dispatch change to ensure submitBtn gets focus if that logic is tied to 'change'
+                        radioButtons[nextIndex].focus(); 
                         const changeEvent = new Event('change', { bubbles: true });
                         radioButtons[nextIndex].dispatchEvent(changeEvent);
                     }
@@ -585,7 +686,7 @@ input.addEventListener('keydown', function(event) {
         });
         
         // --- Initialize ---
-        initializeQuiz();
+        initializeQuiz(); 
 
     </script>
 </body>
