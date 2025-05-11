@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bioinformatics Study Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .question-container {
+            min-height: 100px; 
+        }
+        .feedback-container {
+            min-height: 60px;
+        }
+        .options-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            border: 1px solid #4B5563; /* gray-600 for dark theme */
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .options-container label:hover {
+            background-color: #374151; /* gray-700 for dark theme */
+        }
+        /* Style for the label when its radio button is focused via keyboard */
+        .options-container input[type="radio"]:focus ~ span.option-text, 
+        .options-container label.focused-option-style { 
+            /* The label itself won't get focus, but we can style it based on radio focus */
+            /* Or add a class to the label dynamically */
+            background-color: #374151; /* gray-700 */
+            outline: 2px solid #38BDF8; /* sky-400 */
+            outline-offset: -1px;
+        }
+        .options-container input[type="radio"] {
+            margin-right: 0.5rem;
+            accent-color: #38BDF8; /* sky-400 */
+        }
+        .correct-answer { color: #10B981; font-weight: bold; }
+        .incorrect-answer { color: #EF4444; font-weight: bold; }
+        .info-feedback { color: #F59E0B; font-weight: normal; }
+
+        @media (max-width: 640px) {
+            .main-container { padding: 1rem; }
+            h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="bg-slate-800 p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl main-container">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl font-bold text-sky-400">Bioinformatics</h1>
+        </header>
+
+        <div id="study-area">
+            <div class="question-container mb-4 p-4 bg-slate-700 rounded-lg">
+                <p id="question-text" class="text-lg text-slate-200"></p>
+            </div>
+
+            <div id="answer-area" class="mb-4">
+                </div>
+
+            <button id="submit-btn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out">
+                Submit Answer
+            </button>
+
+            <div class="feedback-container mt-4 p-3 bg-slate-700 rounded-lg">
+                <p id="feedback-text" class="text-center text-slate-300"></p>
+                <p id="correct-answer-text" class="text-center mt-1 text-sm text-slate-400"></p>
+                <p id="explanation-text" class="text-center mt-1 text-xs text-slate-500"></p>
+            </div>
+
+            <button id="next-btn" class="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-150 ease-in-out hidden">
+                Next Question
+            </button>
+        </div>
+
+        <div class="mt-6 text-center">
+            <p class="text-sm text-slate-400">Question Progress: <span id="current-q-progress">0 of 0</span></p>
+            <p class="text-sm text-slate-400">Overall Score: <span id="score">0</span> / <span id="total-master-questions">0</span></p>
+        </div>
+
+        </div>
+
+    <footer class="mt-8 text-center">
+        <p class="text-xs text-slate-500">Happy Studying! Inspired by the Math Academy Way.</p>
+    </footer>
+
+    <script>
+        // --- Initial Question Data (Expanded and Ordered) ---
+        const defaultQuestions = [
+            // Category 0: Core Definitions (Transformed from Foundational Concepts)
+            { type: "fill-in-the-blank", question: "The molecule that carries genetic instructions for most organisms, often described as a double helix, is ____.", answer: "DNA", explanation: "DNA stands for Deoxyribonucleic Acid." },
+            { type: "multiple-choice", question: "Which of these is a primary component of a DNA nucleotide?", options: ["Ribose sugar", "Uracil base", "Deoxyribose sugar", "An amino acid"], answer: "Deoxyribose sugar", explanation: "DNA nucleotides contain Deoxyribose, a phosphate group, and one of four nitrogenous bases (A, T, C, G)." },
+            { type: "fill-in-the-blank", question: "The building blocks of both DNA and RNA are called ____.", answer: "nucleotides", explanation: "They consist of a sugar, a phosphate group, and a nitrogenous base." },
+            { type: "multiple-choice", question: "In DNA, Adenine (A) pairs with ____, and Cytosine (C) pairs with ____.", options: ["Guanine (G); Thymine (T)", "Thymine (T); Guanine (G)", "Uracil (U); Guanine (G)", "Cytosine (C); Thymine (T)"], answer: "Thymine (T); Guanine (G)", explanation: "This is complementary base pairing." },
+            { type: "fill-in-the-blank", question: "A specific sequence of DNA that codes for a functional product, such as a protein, is a ____.", answer: "gene", explanation: "Genes are the basic units of heredity." },
+            { type: "fill-in-the-blank", question: "In eukaryotic genes, the coding sequences that are ultimately translated into protein are called ____.", answer: "exons", explanation: "Exons are 'expressed' sequences." },
+            { type: "fill-in-the-blank", question: "Non-coding sequences within eukaryotic genes that are removed during mRNA processing are known as ____.", answer: "introns", explanation: "Introns are 'intervening' sequences." },
+            { type: "fill-in-the-blank", question: "The cellular process that removes introns from pre-mRNA and joins exons together is called ____.", answer: "splicing", explanation: "This produces mature mRNA." },
+            { type: "multiple-choice", question: "What type of RNA carries the genetic code from DNA to the ribosome for protein synthesis?", options: ["tRNA (transfer RNA)", "rRNA (ribosomal RNA)", "mRNA (messenger RNA)", "snRNA (small nuclear RNA)"], answer: "mRNA (messenger RNA)", explanation: "mRNA acts as the template for translation." },
+            { type: "fill-in-the-blank", question: "A mature eukaryotic mRNA molecule typically has a protective ____ ____ at its 5' end.", answer: "5' cap", explanation: "This cap aids in ribosome binding and protects against degradation." },
+            { type: "fill-in-the-blank", question: "A sequence of three nucleotides in an mRNA molecule that specifies a particular amino acid is a ____.", answer: "codon", explanation: "The genetic code is read as these triplet units." },
+            { type: "multiple-choice", question: "The central dogma of molecular biology describes information flow as:", options: ["Protein → RNA → DNA", "DNA → Protein → RNA", "RNA → DNA → Protein", "DNA → RNA → Protein"], answer: "DNA → RNA → Protein", explanation: "This fundamental principle outlines how genetic information is expressed." },
+            { type: "fill-in-the-blank", question: "The process of synthesizing RNA from a DNA template is called ____.", answer: "transcription", explanation: "This is the first main step in gene expression." },
+            { type: "fill-in-the-blank", question: "The synthesis of a protein from an mRNA template, occurring at ribosomes, is called ____.", answer: "translation", explanation: "This is the second main step in gene expression." },
+            { type: "fill-in-the-blank", question: "____ RNA (tRNA) molecules are responsible for bringing the correct amino acids to the ribosome during protein synthesis.", answer: "Transfer", explanation: "tRNAs have an anticodon that pairs with an mRNA codon and carry a corresponding amino acid." },
+            { type: "fill-in-the-blank", question: "The complete set of an organism's genetic material (DNA) is referred to as its ____.", answer: "genome", explanation: "It contains all the genes and non-coding DNA." },
+            { type: "fill-in-the-blank", question: "The interdisciplinary field that uses computational approaches to analyze and interpret biological data is ____.", answer: "bioinformatics", explanation: "It merges biology with computer science, statistics, and mathematics." },
+            { type: "fill-in-the-blank", question: "The process of arranging biological sequences (DNA, RNA, or protein) to identify regions of similarity is called sequence ____.", answer: "alignment", explanation: "This can reveal functional, structural, or evolutionary relationships." },
+            { type: "multiple-choice", question: "Which text-based format is commonly used for representing biological sequences, typically starting with a '>' character followed by a description line?", options: ["GFF", "BED", "FASTA", "SAM"], answer: "FASTA", explanation: "The sequence data follows the description line." },
+            { type: "fill-in-the-blank", question: "The ____ format is a simple, tab-delimited text file used to store information about genomic regions, such as the coordinates of genes or exons.", answer: "BED", explanation: "Key columns include chromosome, start position, and end position." },
+            { type: "fill-in-the-blank", question: "A precise sequence of instructions or a set of rules to be followed in calculations or other problem-solving operations, especially by a computer, is an ____.", answer: "algorithm", explanation: "Bioinformatics relies on many different algorithms for data analysis." },
+            { type: "multiple-choice", question: "An algorithm that makes the best apparent choice at each step, without regard for future consequences, is known as a ____ algorithm.", options: ["Dynamic Programming", "Recursive", "Greedy", "Branch and Bound"], answer: "Greedy", explanation: "This approach is often fast but may not yield a globally optimal solution." },
+            { type: "fill-in-the-blank", question: "The algorithmic technique of solving a complex problem by breaking it down into simpler, overlapping subproblems and storing the solutions to these subproblems to avoid redundant computation is called ____ ____.", answer: "Dynamic Programming", explanation: "This is fundamental to algorithms like Needleman-Wunsch and Smith-Waterman." },
+            { type: "fill-in-the-blank", question: "The ____ and ____ algorithm is a systematic method for solving optimization problems by exploring a tree of possibilities and pruning branches that cannot lead to a better solution than one already found.", answer: "Branch; Bound", explanation: "It combines enumeration with intelligent pruning." },
+            { type: "multiple-choice", question: "What does Big-O notation, such as O(n) or O(n²), primarily describe about an algorithm?", options: ["Its accuracy", "Its ease of implementation", "How its runtime or space requirements scale with increasing input size", "The specific programming language used"], answer: "How its runtime or space requirements scale with increasing input size", explanation: "It characterizes the algorithm's asymptotic efficiency." },
+            { type: "fill-in-the-blank", question: "Identifying short, conserved sequence patterns, often with biological significance (like binding sites), within a set of biological sequences is the goal of ____ ____.", answer: "Motif Finding", explanation: "These motifs can be crucial for gene regulation." },
+            { type: "multiple-choice", question: "Which type of sequence alignment aims to align entire sequences from end to end, often used for closely related sequences?", options: ["Local Alignment (e.g., Smith-Waterman)", "Global Alignment (e.g., Needleman-Wunsch)", "Multiple Sequence Alignment", "Heuristic Alignment"], answer: "Global Alignment (e.g., Needleman-Wunsch)", explanation: "It seeks the best alignment over the full length of both sequences." },
+            { type: "fill-in-the-blank", question: "The ____-____ algorithm is used to find the optimal local alignment, identifying the most similar subsequences between two sequences.", answer: "Smith-Waterman", explanation: "This is useful for finding conserved domains or regions in otherwise divergent sequences." },
+            { type: "fill-in-the-blank", question: "____ is a widely used heuristic algorithm for rapidly finding local similarities between a query sequence and sequences within a large database.", answer: "BLAST", explanation: "It stands for Basic Local Alignment Search Tool." },
+            { type: "fill-in-the-blank", question: "The computational process of identifying the locations of genes and their coding regions (exons, introns) within a genomic DNA sequence is known as ____ ____.", answer: "Gene Prediction", explanation: "This is a fundamental task in genome annotation." },
+            { type: "fill-in-the-blank", question: "____-____ is a high-throughput sequencing technology used to analyze the transcriptome of a sample, primarily to measure gene expression levels by quantifying RNA transcripts.", answer: "RNA-Seq", explanation: "It provides a snapshot of which genes are active and at what levels." },
+            { type: "multiple-choice", question: "Which of these data structures are specifically designed for efficient searching of patterns (substrings or keywords) within text?", options: ["Arrays and Linked Lists", "Hash Maps and Sets", "Suffix Trees and Keyword Trees (Tries)", "Binary Search Trees and Heaps"], answer: "Suffix Trees and Keyword Trees (Tries)", explanation: "They enable very fast lookups of patterns." },
+            
+            { type: "multiple-choice", question: "The two strands of a DNA double helix are said to be ____ to each other.", options: ["Identical", "Parallel", "Antiparallel", "Perpendicular"], answer: "Antiparallel", explanation: "One strand runs 5' to 3', and the other runs 3' to 5'." },
+            { type: "fill-in-the-blank", question: "The process by which a DNA molecule makes an identical copy of itself is called ____.", answer: "replication", explanation: "Essential for cell division and inheritance." },
+            { type: "multiple-choice", question: "An algorithm with O(1) time complexity means its runtime is:", options: ["Linearly proportional to input size", "Logarithmically proportional to input size", "Constant, regardless of input size", "Exponentially proportional to input size"], answer: "Constant, regardless of input size", explanation: "This is the most efficient time complexity." },
+            { type: "fill-in-the-blank", question: "A ____ is a short, conserved sequence element often found in the regulatory regions of genes.", answer: "motif", explanation: "These can be binding sites for transcription factors." },
+            { type: "multiple-choice", question: "The 'strength' of a motif is often measured by its:", options: ["Length in base pairs", "Degree of conservation (e.g., consensus score)", "Distance from the start codon", "Number of G-C pairs"], answer: "Degree of conservation (e.g., consensus score)" },
+            { type: "fill-in-the-blank", question: "A ____-driven approach to motif finding enumerates all possible patterns and scores them.", answer: "pattern", explanation: "This contrasts with sample-driven approaches." },
+            { type: "fill-in-the-blank", question: "In sequence alignment, a ____ is introduced to represent an insertion or deletion event.", answer: "gap", explanation: "Gaps are penalized in scoring schemes." },
+            { type: "multiple-choice", question: "The Needleman-Wunsch algorithm is used for ____ alignment.", options: ["Local", "Global", "Multiple", "Heuristic"], answer: "Global" },
+            { type: "fill-in-the-blank", question: "The Smith-Waterman algorithm is used for ____ alignment.", answer: "local", explanation: "It finds the best matching subsequences." },
+            { type: "fill-in-the-blank", question: "BLAST stands for Basic ____ Alignment Search Tool.", answer: "Local", explanation: "It's a heuristic method for finding local similarities." },
+            { type: "multiple-choice", question: "The E-value in BLAST depends on the alignment score, database size, and ____ length.", options: ["Seed", "Query", "Gap", "Intron"], answer: "Query" },
+            { type: "fill-in-the-blank", question: "In eukaryotes, ____ are removed from pre-mRNA during splicing.", answer: "introns", explanation: "Only exons are present in mature mRNA." },
+            { type: "multiple-choice", question: "The 'Exon Chaining' problem is typically solved using what algorithmic technique?", options: ["Greedy algorithm", "Branch and Bound", "Dynamic Programming", "Hashing"], answer: "Dynamic Programming" },
+            { type: "fill-in-the-blank", question: "RNA-Seq is used to quantify the ____, which represents the set of all RNA molecules in a cell.", answer: "transcriptome", explanation: "This gives insights into gene activity." },
+            { type: "multiple-choice", question: "RPKM is a normalization method in RNA-Seq. What does 'M' stand for?", options: ["Motif", "Median", "Million", "Mapping"], answer: "Million", explanation: "Reads Per Kilobase per Million mapped reads." },
+            { type: "fill-in-the-blank", question: "A Trie, also known as a ____ tree, is efficient for storing and searching a set of strings.", answer: "keyword", explanation: "Or prefix tree." },
+            { type: "multiple-choice", question: "A Suffix Tree of a text T contains all ____ of T.", options: ["Prefixes", "Substrings", "Suffixes", "Codons"], answer: "Suffixes" },
+            
+            { type: "fill-in-the-blank", question: "The molecule that carries genetic information in most organisms is ____.", answer: "DNA", explanation: "DNA stands for Deoxyribonucleic Acid." },
+            { type: "multiple-choice", question: "Which of these is NOT a DNA nucleotide base?", options: ["Adenine", "Guanine", "Cytosine", "Uracil"], answer: "Uracil", explanation: "Uracil is found in RNA, replacing Thymine." },
+            { type: "fill-in-the-blank", question: "A segment of DNA that codes for a functional product (like a protein) is called a ____.", answer: "gene", explanation: "Genes are the basic units of heredity." },
+            { type: "fill-in-the-blank", question: "In eukaryotic genes, the coding sequences are called ____.", answer: "exons", explanation: "Exons are expressed, while introns are removed." },
+            { type: "fill-in-the-blank", question: "Non-coding regions within a eukaryotic gene that are removed during mRNA processing are called ____.", answer: "introns", explanation: "Introns are spliced out of the pre-mRNA." },
+            { type: "fill-in-the-blank", question: "The process of removing introns and joining exons is called ____.", answer: "splicing", explanation: "Splicing produces mature mRNA." },
+            { type: "multiple-choice", question: "Which end of a mature eukaryotic mRNA has a poly-A tail?", options: ["5' end", "3' end", "Both ends", "Neither end"], answer: "3' end", explanation: "The poly-A tail helps in mRNA stability and export." },
+            { type: "fill-in-the-blank", question: "A sequence of three nucleotides in mRNA that specifies a particular amino acid is a ____.", answer: "codon", explanation: "The genetic code is read in triplets." },
+            { type: "fill-in-the-blank", question: "The process by which an mRNA sequence is used to synthesize a protein is called ____.", answer: "translation", explanation: "Translation occurs in ribosomes." },
+            { type: "multiple-choice", question: "What type of RNA molecule is responsible for bringing amino acids to the ribosome during protein synthesis?", options: ["mRNA", "rRNA", "tRNA", "snRNA"], answer: "tRNA", explanation: "tRNA (transfer RNA) matches codons with amino acids." },
+            { type: "fill-in-the-blank", question: "The complete set of genetic material in an organism is its ____.", answer: "genome", explanation: "The genome includes all chromosomes." },
+
+            { type: "fill-in-the-blank", question: "The interdisciplinary field that develops methods and software tools for understanding biological data is ____.", answer: "bioinformatics", explanation: "Bioinformatics combines biology, computer science, and statistics." },
+            { type: "multiple-choice", question: "What is the primary goal of sequence alignment?", options: ["To determine the age of a sequence", "To identify regions of similarity that may indicate functional or evolutionary relationships", "To synthesize new DNA sequences", "To count the number of genes"], answer: "To identify regions of similarity that may indicate functional or evolutionary relationships", explanation: "Alignment helps infer homology and function." },
+            { type: "fill-in-the-blank", question: "A text-based format for representing nucleotide or protein sequences, starting with a '>' description line, is called ____ format.", answer: "FASTA", explanation: "FASTA is a common sequence format." },
+            { type: "multiple-choice", question: "The BED format is primarily used to store what kind of information?", options: ["Protein structures", "Sequence alignments", "Genomic regions and annotations", "Metabolic pathways"], answer: "Genomic regions and annotations", explanation: "BED files define features like genes or exons by their coordinates." },
+            { type: "fill-in-the-blank", question: "An algorithm that makes the locally optimal choice at each step is known as a ____ algorithm.", answer: "greedy", explanation: "Greedy algorithms are often fast but may not find the global optimum." },
+            { type: "fill-in-the-blank", question: "____ ____ is an algorithmic technique that solves problems by breaking them into overlapping subproblems and storing their solutions.", answer: "Dynamic Programming", explanation: "DP is used in algorithms like Needleman-Wunsch and Smith-Waterman." },
+            { type: "multiple-choice", question: "What does Big-O notation describe?", options: ["The exact runtime of an algorithm", "The algorithm's memory usage only", "The growth rate of an algorithm's resource usage as input size increases", "The number of lines of code"], answer: "The growth rate of an algorithm's resource usage as input size increases", explanation: "It characterizes an algorithm's efficiency in the limit." },
+
+            { type: "multiple-choice", question: "The Motif Finding Problem aims to find a conserved L-mer that maximizes what?", options: ["Hamming Distance", "Consensus Score", "E-value", "Sequence Length"], answer: "Consensus Score", explanation: "A higher consensus score indicates stronger conservation." },
+            { type: "fill-in-the-blank", question: "The number of positions at which two strings of equal length differ is their ____ ____.", answer: "Hamming Distance", explanation: "Used in finding median strings." },
+            { type: "fill-in-the-blank", question: "In motif finding, an L-mer that minimizes the sum of Hamming distances to the closest L-mers in a set of sequences is the ____ string.", answer: "median", explanation: "Finding the median string is an alternative formulation of motif finding." },
+            { type: "multiple-choice", question: "A brute-force approach to median string finding involves checking how many possible L-mers if L is the length and the alphabet size is 4 (for DNA)?", options: ["4*L", "L^4", "4^L", "L/4"], answer: "4^L", explanation: "Each of the L positions can be one of 4 bases." },
+
+            { type: "multiple-choice", question: "Which type of alignment aligns two sequences over their entire lengths?", options: ["Local Alignment", "Global Alignment", "Multiple Sequence Alignment", "Heuristic Alignment"], answer: "Global Alignment", explanation: "Useful when comparing closely related sequences of similar length." },
+            { type: "fill-in-the-blank", question: "The ____-Wunsch algorithm is used for optimal global sequence alignment.", answer: "Needleman", explanation: "It uses dynamic programming." },
+            { type: "multiple-choice", question: "Which algorithm is designed to find the most similar subsequences between two sequences?", options: ["Needleman-Wunsch", "Smith-Waterman", "BLAST", "FASTA"], answer: "Smith-Waterman", explanation: "Smith-Waterman is for optimal local alignment." },
+            { type: "fill-in-the-blank", question: "Finding the Longest Common Subsequence (LCS) is a special case of ____ alignment.", answer: "global", explanation: "LCS typically uses a scoring scheme with +1 for matches and 0 or negative for mismatches/gaps." },
+            { type: "fill-in-the-blank", question: "A gap penalty model that has separate penalties for opening a gap and for extending it is called an ____ gap penalty.", answer: "affine", explanation: "Example: Penalty = G_open + (L-1)*G_extend." },
+            { type: "multiple-choice", question: "BLOSUM62 is a scoring matrix used for aligning what type of sequences?", options: ["DNA", "RNA", "Protein", "Carbohydrate"], answer: "Protein", explanation: "BLOSUM matrices are derived from conserved blocks of protein alignments." },
+            { type: "fill-in-the-blank", question: "The percentage of identical characters in corresponding positions of an alignment is known as alignment ____.", answer: "identity", explanation: "A common measure of similarity." },
+
+            { type: "multiple-choice", question: "BLAST (Basic Local Alignment Search Tool) is primarily what type of algorithm?", options: ["Optimal", "Exhaustive", "Heuristic", "Probabilistic"], answer: "Heuristic", explanation: "It sacrifices guaranteed optimality for speed." },
+            { type: "fill-in-the-blank", question: "The first step in BLAST, which involves finding short, exact or near-exact matches, is called ____.", answer: "seeding", explanation: "Seeds are typically short words (W-mers)." },
+            { type: "multiple-choice", question: "In BLAST, what does 'W' usually refer to in the context of seeding?", options: ["Window size for gapped extension", "Word size for initial matches", "Weight of the scoring matrix", "Worst possible score"], answer: "Word size for initial matches", explanation: "For example, W=3 for proteins in BLASTP." },
+            { type: "fill-in-the-blank", question: "A ____ ____ ____ (HSP) in BLAST is a local alignment of a query and database sequence with no gaps that achieves a score above a threshold.", answer: "High-scoring Segment Pair", explanation: "HSPs are extended to form longer alignments." },
+            { type: "fill-in-the-blank", question: "The ____ in a BLAST output indicates the number of alignments with a similar or better score expected to occur by chance.", answer: "E-value", explanation: "Lower E-values are more significant." },
+            { type: "multiple-choice", question: "If a BLAST search returns an E-value of 0.001, it means:", options: ["The alignment is definitely biologically significant.", "There is a 0.1% chance the alignment is random.", "One would expect to see such a score by chance about once in 1000 searches of a similar database.", "The alignment score is very low."], answer: "One would expect to see such a score by chance about once in 1000 searches of a similar database.", explanation: "It's a statistical measure of significance." },
+
+            { type: "fill-in-the-blank", question: "The computational process of identifying gene locations in genomic DNA is called ____ ____.", answer: "gene prediction", explanation: "It involves finding exons, introns, etc." },
+            { type: "multiple-choice", question: "The statistical approach to gene prediction often looks for consensus sequences like AG-GT, which are known as ____ signals.", options: ["Promoter", "Terminator", "Splicing", "Replication"], answer: "Splicing", explanation: "These are donor (GT) and acceptor (AG) sites for introns." },
+            { type: "fill-in-the-blank", question: "A genomic DNA segment predicted to be an exon, but not yet experimentally confirmed, is a ____ exon.", answer: "putative", explanation: "It's a candidate exon." },
+            { type: "multiple-choice", question: "The Exon Chaining Problem aims to find a set of non-overlapping putative exons that:", options: ["Are longest in combined length", "Have the maximum total weight (score)", "Contain the most AG-GT sites", "Are closest to the start of the chromosome"], answer: "Have the maximum total weight (score)", explanation: "Dynamic programming is used to solve this." },
+            { type: "fill-in-the-blank", question: "Aligning a protein or cDNA sequence to genomic DNA, allowing for large gaps corresponding to introns, is called ____ alignment.", answer: "spliced", explanation: "This helps identify exon-intron structures." },
+
+            { type: "multiple-choice", question: "RNA-Seq is a technique primarily used to analyze an organism's:", options: ["Genome", "Proteome", "Transcriptome", "Metabolome"], answer: "Transcriptome", explanation: "It quantifies RNA levels, indicating gene activity." },
+            { type: "fill-in-the-blank", question: "The complete set of RNA transcripts in a cell or organism is its ____.", answer: "transcriptome", explanation: "Includes mRNA, tRNA, rRNA, etc." },
+            { type: "multiple-choice", question: "In RNA-Seq preprocessing, why are junction regions prepared?", options: ["To mask repetitive elements", "To allow mapping of reads that span exon-exon boundaries", "To normalize read counts", "To identify protein coding regions only"], answer: "To allow mapping of reads that span exon-exon boundaries", explanation: "Spliced reads would not map contiguously to the genome." },
+            { type: "fill-in-the-blank", question: "RPKM is a method used in RNA-Seq for the ____ of read counts.", answer: "normalization", explanation: "It accounts for gene length and sequencing depth." },
+            { type: "multiple-choice", question: "What does the 'K' in RPKM stand for?", options: ["Kilobase", "Known genes", "Kinase", "Karyotype"], answer: "Kilobase", explanation: "Reads Per Kilobase of exon model per Million mapped reads." },
+            { type: "fill-in-the-blank", question: "Regions in the genome where RNA-Seq reads cannot be uniquely mapped due to repeats are called ____ zones.", answer: "dead", explanation: "These regions can affect accurate quantification." },
+            { type: "multiple-choice", question: "Using 'effective gene length' in RPKM calculations helps to:", options: ["Increase the number of mapped reads", "Correct for biases introduced by non-uniquely mappable regions", "Identify novel genes", "Simplify the calculation"], answer: "Correct for biases introduced by non-uniquely mappable regions", explanation: "It provides a more accurate measure of the mappable portion of a gene." },
+            { type: "fill-in-the-blank", question: "The fraction of a gene's sequence to which reads can be uniquely mapped is its gene ____.", answer: "mappability", explanation: "It's related to effective gene length and dead zones." },
+
+            { type: "fill-in-the-blank", question: "A tree structure used for storing a set of strings (keywords) to perform efficient multiple pattern matching is a ____ tree (or Trie).", answer: "keyword", explanation: "Each path from root to a node can represent a keyword or its prefix." },
+            { type: "multiple-choice", question: "What is a Suffix Tree primarily used for?", options: ["Storing protein structures", "Multiple sequence alignment", "Fast pattern searching within a single large text", "Predicting RNA secondary structure"], answer: "Fast pattern searching within a single large text", explanation: "After O(|Text|) construction, patterns can be found in O(|Pattern|) time." },
+            { type: "fill-in-the-blank", question: "In a suffix tree, each path from the root to a ____ represents a suffix of the original text.", answer: "leaf", explanation: "The tree compactly stores all suffixes." },
+            
+            { type: "multiple-choice", question: "The branch-and-bound algorithm for median string finding prunes the search space by using:", options: ["A greedy choice at each step", "An optimistic distance/score to eliminate unpromising branches", "A fixed number of iterations", "Random sampling of L-mers"], answer: "An optimistic distance/score to eliminate unpromising branches", explanation: "If the best possible score in a subtree is worse than the current best, that subtree is skipped." },
+            { type: "fill-in-the-blank", question: "The relationship between maximizing consensus score (S) in motif finding and minimizing total Hamming distance (D_H) for a median string of length L in t sequences is approximately $S \\approx L \\cdot t - D_H$. True or False?", answer: "True", explanation: "They are inversely related objectives for the same underlying biological signal." },
+
+            { type: "multiple-choice", question: "If the gap open penalty is -10 and gap extension is -1, what is the affine gap penalty for a gap of length 3?", options: ["-10", "-12", "-13", "-30"], answer: "-12", explanation: "Penalty = -10 (open) + (3-1) * -1 (extend) = -10 - 2 = -12." },
+            { type: "fill-in-the-blank", question: "The Smith-Waterman algorithm initializes its dynamic programming matrix with ____ to allow for local alignments to start anywhere.", answer: "zeros", explanation: "This ensures that negative scores from poor alignments do not propagate and allows new high-scoring local alignments to begin." },
+            { type: "multiple-choice", question: "Which scoring matrix would be more appropriate for comparing distantly related proteins?", options: ["BLOSUM80", "BLOSUM62", "BLOSUM45", "PAM30"], answer: "BLOSUM45", explanation: "Lower BLOSUM numbers (e.g., BLOSUM45) are designed for more divergent sequences, while higher PAM numbers (e.g., PAM250) are for distant relations." },
+
+            { type: "fill-in-the-blank", question: "In BLAST, the statistical significance of an alignment is primarily assessed using the ____.", answer: "E-value", explanation: "The E-value depends on the score, database size, and query length." },
+            { type: "multiple-choice", question: "A 'two-hit' method in BLAST seeding is designed to:", options: ["Increase alignment speed by processing two sequences at once", "Reduce the number of false positive extensions by requiring two nearby initial matches", "Allow for gapped alignments directly from seeds", "Double the word size for increased specificity"], answer: "Reduce the number of false positive extensions by requiring two nearby initial matches", explanation: "This increases the likelihood that the seeded region is part of a true homology." },
+
+            { type: "fill-in-the-blank", question: "In the dynamic programming solution for the Exon Chaining problem, $S_i = \\max(S_{i-1}, S_j + w_i)$, $w_i$ represents the ____ of the $i$-th putative exon.", answer: "score", explanation: "$S_j$ is the score of the best chain ending before exon $i$ that is compatible with exon $i$." },
+            { type: "multiple-choice", question: "Spliced alignment algorithms often use a 3D dynamic programming table. What do the three dimensions typically represent?", options: ["Genomic position, Target protein position, Exon number", "Genomic position, Target protein position, Gap penalty state", "Chromosome, Gene, Exon", "Read length, Read position, Quality score"], answer: "Genomic position, Target protein position, Exon number", explanation: "Or a state indicating if currently aligning within an exon or an intron, or considering a jump between exons." },
+
+            { type: "fill-in-the-blank", question: "If a gene has a raw read count of 500, its length is 2 Kbp, and the total mapped reads in the experiment are 10 Million, its RPKM value is ____.", answer: "25", explanation: "RPKM = (500 * 10^9) / (2000 * 10 * 10^6) = 500 / (20) = 25." },
+            { type: "multiple-choice", question: "Why is it important to account for dead zones when calculating gene expression from RNA-Seq data?", options: ["Dead zones always indicate highly expressed genes.", "Reads from dead zones are longer than other reads.", "Failure to account for them can lead to underestimation of expression for genes overlapping dead zones if total length is used.", "Dead zones are only found in non-coding RNAs."], answer: "Failure to account for them can lead to underestimation of expression for genes overlapping dead zones if total length is used.", explanation: "Using effective (mappable) length provides a more accurate denominator for RPKM." },
+            { type: "fill-in-the-blank", question: "The process of 'collapsing exon annotations' in RNA-Seq preprocessing aims to create a ____ set of exonic regions for read counting.", answer: "non-redundant", explanation: "This avoids counting reads multiple times if exons from different transcripts overlap." },
+
+            { type: "multiple-choice", question: "What is a major advantage of using a Suffix Tree for pattern matching over simpler string searching algorithms like naive search?", options: ["It requires less memory to store the text.", "Its construction time is faster than the search time.", "After initial construction, searching for any pattern is very fast, proportional to pattern length.", "It can find approximate matches by default."], answer: "After initial construction, searching for any pattern is very fast, proportional to pattern length.", explanation: "O(|Text|) to build, then O(|Pattern|) to search." },
+            { type: "fill-in-the-blank", question: "A Keyword Tree (Trie) is particularly efficient for determining if a query string is a ____ of any of the stored keywords.", answer: "prefix", explanation: "Or if it is one of the exact keywords." },
+            
+            { type: "multiple-choice", question: "Which of these algorithmic paradigms is most suitable for finding the optimal global alignment between two sequences?", options: ["Greedy", "Divide and Conquer", "Dynamic Programming", "Randomized Algorithm"], answer: "Dynamic Programming", explanation: "Needleman-Wunsch uses dynamic programming." },
+            { type: "fill-in-the-blank", question: "The central dogma of molecular biology describes the flow of genetic information as: DNA -> ____ -> Protein.", answer: "RNA", explanation: "Specifically, mRNA is transcribed from DNA and then translated into protein." },
+            { type: "multiple-choice", question: "A heuristic algorithm typically prioritizes ____ over guaranteed optimality.", options: ["Memory efficiency", "Speed or finding a good-enough solution", "Mathematical proof of correctness", "Ease of implementation"], answer: "Speed or finding a good-enough solution", explanation: "Heuristics are used when exact methods are too slow for practical purposes." },
+            { type: "fill-in-the-blank", question: "In bioinformatics, identifying homologous sequences across different species can help infer evolutionary relationships and predict gene ____.", answer: "function", explanation: "Homology often implies shared ancestry and similar roles." },
+            { type: "multiple-choice", question: "What is the primary reason for normalizing read counts in RNA-Seq (e.g., using RPKM or TPM)?", options: ["To identify novel splice variants", "To correct for sequencing errors", "To make expression levels comparable across different genes and different samples", "To assemble transcripts from short reads"], answer: "To make expression levels comparable across different genes and different samples", explanation: "Normalization accounts for variations in gene length and library sequencing depth." },
+            { type: "fill-in-the-blank", question: "The 'AG' and 'GT' dinucleotides often found at the boundaries of introns are known as splice ____ and splice ____ sites, respectively.", answer: "acceptor; donor", explanation: "These consensus sequences are recognized by the splicing machinery." },
+            { type: "multiple-choice", question: "If a motif finding algorithm is described as 'pattern-driven', it means it primarily:", options: ["Learns patterns from sequence alignments provided by the user", "Enumerates all possible patterns and scores them against the sequences", "Focuses on the statistical properties of individual input sequences", "Uses known protein binding site data to guide the search"], answer: "Enumerates all possible patterns and scores them against the sequences", explanation: "This contrasts with sample-driven approaches that might build profiles from the input sequences directly." },
+            { type: "fill-in-the-blank", question: "The ____ ____ Problem in gene prediction involves selecting an optimal, non-overlapping set of putative exons based on their scores.", answer: "Exon Chaining", explanation: "This is often solved using dynamic programming." },
+            { type: "multiple-choice", question: "Which BLAST program would you use to compare a protein query against a translated nucleotide database?", options: ["blastp", "blastn", "blastx", "tblastn"], answer: "tblastn", explanation: "tblastn translates the nucleotide database in all six reading frames and compares it to the protein query." },
+            { type: "fill-in-the-blank", question: "A ____ is a graphical representation of the conservation of residues in a set of aligned sequences, often used for motifs.", answer: "profile", explanation: "Also known as a Position Weight Matrix (PWM) or sequence logo." },
+            { type: "multiple-choice", question: "The 'effective length' of a database in BLAST statistics is adjusted to account for:", options: ["The number of different species in the database", "Edge effects, as alignments cannot start beyond a certain point", "The average query length used against the database", "The GC content of the database"], answer: "Edge effects, as alignments cannot start beyond a certain point", explanation: "This makes the statistical calculations more accurate." },
+            { type: "fill-in-the-blank", question: "In RNA-Seq, 'masking' the reference genome typically involves replacing ____ regions with 'N's.", answer: "intronic", explanation: "Or intergenic regions, to focus mapping on exons if that's the primary interest." },
+            { type: "multiple-choice", question: "A Suffix Array is a data structure closely related to a Suffix Tree. It stores:", options: ["The suffixes themselves in lexicographical order", "The starting positions of all suffixes in lexicographical order", "The lengths of all suffixes", "A compressed representation of all prefixes"], answer: "The starting positions of all suffixes in lexicographical order", explanation: "It's more space-efficient than a full suffix tree but can perform many similar tasks." },
+            { type: "fill-in-the-blank", question: "The Smith-Waterman algorithm is guaranteed to find the ____ scoring local alignment(s).", answer: "optimal", explanation: "Unlike heuristic methods like BLAST." },
+            { type: "multiple-choice", question: "Which of these is a key difference between DNA and RNA?", options: ["DNA contains uracil, RNA contains thymine", "DNA is usually single-stranded, RNA is double-stranded", "DNA contains deoxyribose sugar, RNA contains ribose sugar", "DNA is only found in the cytoplasm, RNA only in the nucleus"], answer: "DNA contains deoxyribose sugar, RNA contains ribose sugar", explanation: "Also, DNA has Thymine (T) while RNA has Uracil (U), and DNA is typically double-stranded while RNA is often single-stranded." },
+            { type: "fill-in-the-blank", question: "A ____ algorithm might get stuck in a local optimum and fail to find the global optimum.", answer: "greedy", explanation: "This is a common trade-off for its speed." },
+            { type: "multiple-choice", question: "The term 'homology' in bioinformatics implies:", options: ["Identical sequences", "Similar function only", "Shared ancestry", "Similar 3D structure only"], answer: "Shared ancestry", explanation: "Homology is an inference of common evolutionary origin, often supported by sequence similarity." },
+            { type: "fill-in-the-blank", question: "In the context of gene prediction, 'ab initio' methods predict genes based on ____ signals within the DNA sequence itself, without relying on external homologous sequences.", answer: "intrinsic", explanation: "These methods look for codon usage, splice sites, promoter signals etc." },
+            { type: "multiple-choice", question: "What is the main purpose of the Poly-A tail on a eukaryotic mRNA?", options: ["To initiate translation", "To mark the start of an intron", "To increase mRNA stability and facilitate its export from the nucleus", "To bind to tRNA"], answer: "To increase mRNA stability and facilitate its export from the nucleus", explanation: "It also plays a role in translation initiation." },
+            { type: "fill-in-the-blank", question: "The ____ problem is to find a short, conserved pattern (L-mer) that appears in multiple DNA sequences, often with some variations.", answer: "motif finding", explanation: "These motifs can be regulatory elements like transcription factor binding sites." },
+            { type: "multiple-choice", question: "When using BLAST, a very low E-value (e.g., e-100) for an alignment suggests that the similarity is:", options: ["Likely due to random chance", "Statistically highly significant and unlikely due to chance", "Of moderate significance", "An indication of a poor quality query sequence"], answer: "Statistically highly significant and unlikely due to chance", explanation: "It means it's very improbable to find such a match by chance alone." },
+            { type: "fill-in-the-blank", question: "The process of converting the information from an mRNA molecule into a sequence of amino acids is called ____.", answer: "translation", explanation: "This occurs on ribosomes and involves tRNA." },
+            { type: "multiple-choice", question: "Which of these is a common application of suffix trees in bioinformatics?", options: ["Predicting protein folding", "Finding exact matches of short DNA sequences (e.g., primers) in a genome", "Calculating RNA secondary structure energy", "Simulating population genetics"], answer: "Finding exact matches of short DNA sequences (e.g., primers) in a genome", explanation: "Suffix trees excel at rapid exact string matching." },
+            { type: "fill-in-the-blank", question: "In RNA-Seq, if a read maps to a region created by joining the end of exon 1 and the start of exon 2, it's considered a ____ read.", answer: "junction", explanation: "These reads provide evidence for splicing events." },
+            { type: "multiple-choice", question: "The 'Needleman-Wunsch' algorithm is an example of ____ programming.", options: ["Linear", "Integer", "Dynamic", "Constraint"], answer: "Dynamic", explanation: "It builds up the optimal alignment score by solving subproblems." },
+            { type: "fill-in-the-blank", question: "A ____ is a scoring matrix used in sequence alignment, often derived from observed substitution frequencies in related proteins.", answer: "BLOSUM", explanation: "BLOSUM62 is a commonly used example for protein alignments." },
+            { type: "multiple-choice", question: "What is the primary output of an RNA-Seq experiment after initial processing and mapping?", options: ["A list of protein structures", "A fully assembled genome sequence", "Counts of reads mapping to each gene or transcript", "A phylogenetic tree"], answer: "Counts of reads mapping to each gene or transcript", explanation: "These counts are then used to infer gene expression levels." },
+            { type: "fill-in-the-blank", question: "The ____ ____ is the problem of finding the highest scoring local alignment between two sequences.", answer: "Smith-Waterman", explanation: "This algorithm is fundamental for identifying conserved domains or motifs." },
+            { type: "multiple-choice", question: "In gene prediction, if you are using a known protein sequence from a related species to help identify exons in a new genome, you are using a ____-based approach.", options: ["Statistical", "Ab initio", "Similarity", "Pattern-driven"], answer: "Similarity", explanation: "This leverages evolutionary conservation of protein sequences." },
+            { type: "fill-in-the-blank", question: "The ____ format is commonly used for storing gene annotations, including chromosome, start, end, and strand information.", answer: "BED", explanation: "It's a simple, tab-delimited format." },
+            { type: "multiple-choice", question: "What does the 'P' in RPKM stand for?", options: ["Protein", "Per", "Paired-end", "Polymerase"], answer: "Per", explanation: "Reads Per Kilobase of exon model per Million mapped reads." },
+            { type: "fill-in-the-blank", question: "A common task in bioinformatics is to search a large sequence ____ (e.g., GenBank) for sequences similar to a query sequence.", answer: "database", explanation: "Tools like BLAST are designed for this purpose." },
+            { type: "multiple-choice", question: "If an algorithm has a time complexity of O(n^2), how does its runtime change if the input size 'n' doubles?", options: ["It doubles", "It quadruples", "It stays the same", "It increases by a factor of n"], answer: "It quadruples", explanation: "Because (2n)^2 = 4n^2." },
+            { type: "fill-in-the-blank", question: "The ____ ____ algorithm is a greedy approach for the Partial Digest Problem.", answer: "practical PDP", explanation: "While the brute-force PDP explores all possibilities, practical versions use heuristics." },
+            { type: "multiple-choice", question: "The 'Central Dogma' of molecular biology describes information flow. Which is the correct order?", options: ["Protein -> RNA -> DNA", "RNA -> DNA -> Protein", "DNA -> Protein -> RNA", "DNA -> RNA -> Protein"], answer: "DNA -> RNA -> Protein", explanation: "DNA is transcribed to RNA, which is translated to protein." }
+        ];
+
+        // --- State Variables ---
+        let masterQuestionList = []; 
+        let currentQuestionQueue = [];
+        let currentQuestionIndexInQueue = 0;
+        let score = 0;
+        let isRetryMode = false; 
+        let activeBaseQuestions = [...defaultQuestions]; 
+        let currentlyFocusedRadioIndexInQuestion = -1; // Persists for the current MC question
+
+        // --- DOM Elements ---
+        const questionTextElement = document.getElementById('question-text');
+        const answerAreaElement = document.getElementById('answer-area');
+        const submitBtn = document.getElementById('submit-btn');
+        const feedbackTextElement = document.getElementById('feedback-text');
+        const correctAnswerTextElement = document.getElementById('correct-answer-text');
+        const explanationTextElement = document.getElementById('explanation-text');
+        const nextBtn = document.getElementById('next-btn');
+        const currentQProgressElement = document.getElementById('current-q-progress');
+        const scoreElement = document.getElementById('score');
+        const totalMasterQuestionsElement = document.getElementById('total-master-questions');
+
+        // --- Functions ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function initializeQuiz() {
+            masterQuestionList = activeBaseQuestions.map(q => ({
+                originalData: JSON.parse(JSON.stringify(q)), 
+                answeredCorrectlyInSession: false
+            }));
+            
+            currentQuestionQueue = [...masterQuestionList]; 
+            currentQuestionIndexInQueue = 0;
+            score = 0;
+            isRetryMode = false;
+            currentlyFocusedRadioIndexInQuestion = -1;
+
+
+            scoreElement.textContent = score;
+            totalMasterQuestionsElement.textContent = masterQuestionList.length;
+            clearFeedback();
+            
+            nextBtn.textContent = "Next Question";
+            
+            submitBtn.classList.remove('hidden');
+            submitBtn.disabled = false;
+            nextBtn.classList.add('hidden');
+
+            if (masterQuestionList.length > 0) {
+                loadQuestion();
+            } else {
+                questionTextElement.textContent = "No questions available.";
+                answerAreaElement.innerHTML = "";
+                submitBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                updateProgress(); 
+            }
+        }
+        
+        function clearFeedback() {
+            feedbackTextElement.textContent = '';
+            correctAnswerTextElement.textContent = '';
+            explanationTextElement.textContent = '';
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndexInQueue >= currentQuestionQueue.length) {
+                let missedQuestions = masterQuestionList.filter(qWrapper => !qWrapper.answeredCorrectlyInSession);
+                
+                if (missedQuestions.length > 0) {
+                    currentQuestionQueue = [...missedQuestions]; 
+                    shuffleArray(currentQuestionQueue); 
+                    currentQuestionIndexInQueue = 0;
+                    isRetryMode = true;
+                    feedbackTextElement.textContent = "Retrying missed questions...";
+                    feedbackTextElement.className = 'info-feedback text-center'; 
+                } else {
+                    displayEndOfQuiz();
+                    return;
+                }
+            }
+
+            const questionWrapper = currentQuestionQueue[currentQuestionIndexInQueue];
+            const currentQuestion = questionWrapper.originalData;
+            currentlyFocusedRadioIndexInQuestion = -1; // Reset for new question
+
+            questionTextElement.textContent = currentQuestion.question;
+            answerAreaElement.innerHTML = ''; 
+            
+            if (!feedbackTextElement.textContent.includes("Retrying missed questions...")) {
+                 clearFeedback();
+            } else if (currentQuestionIndexInQueue === 0 && feedbackTextElement.textContent.includes("Retrying missed questions...")) {
+                // Keep "Retrying..."
+            } else {
+                clearFeedback(); 
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+
+            if (currentQuestion.type === "fill-in-the-blank") {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'fill-answer';
+                input.className = 'w-full p-3 border border-slate-600 rounded-lg bg-slate-700 text-slate-200 focus:ring-sky-500 focus:border-sky-500';
+                input.setAttribute('aria-label', 'Your answer for fill in the blank');
+                answerAreaElement.appendChild(input);
+input.addEventListener('keydown', function(event) {
+    if (
+        event.key === 'Enter' &&
+        input.value.trim() !== '' &&      // only if non-empty
+        !submitBtn.disabled
+    ) {
+        event.preventDefault();           // stop any default form submits
+        checkAnswer();
+    }
+});
+                setTimeout(() => input.focus(), 0);
+            } else if (currentQuestion.type === "multiple-choice") {
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'options-container space-y-2';
+                
+                const shuffledOptions = [...currentQuestion.options]; 
+                shuffleArray(shuffledOptions);
+                const radioButtons = []; 
+                const radioLabels = [];
+
+                shuffledOptions.forEach((option, index) => {
+                    const label = document.createElement('label');
+                    label.className = 'block p-3 border border-slate-600 rounded-lg hover:bg-slate-600 cursor-pointer transition-colors text-slate-300';
+                    label.id = `label-option-${currentQuestionIndexInQueue}-${index}`; // Unique ID for label
+                    
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = 'mc-option';
+                    radio.value = option;
+                    radio.id = `option-${currentQuestionIndexInQueue}-${index}`; // Unique ID for radio
+                    radio.className = 'mr-2 accent-sky-500';
+                    
+                    const optionTextNode = document.createElement('span');
+                    optionTextNode.textContent = option;
+                    optionTextNode.className = 'option-text';
+                    
+                    label.appendChild(radio);
+                    label.appendChild(optionTextNode);
+                    optionsContainer.appendChild(label);
+                    radioButtons.push(radio);
+                    radioLabels.push(label);
+
+                    radio.addEventListener('change', () => { 
+                        if (!submitBtn.disabled) submitBtn.focus();
+                        radioLabels.forEach(lbl => lbl.classList.remove('focused-option-style'));
+                        label.classList.add('focused-option-style');
+                        currentlyFocusedRadioIndexInQuestion = radioButtons.indexOf(radio);
+                    });
+                    radio.addEventListener('focus', () => { // For visual feedback on focus
+                        radioLabels.forEach(lbl => lbl.classList.remove('focused-option-style'));
+                        label.classList.add('focused-option-style');
+                        currentlyFocusedRadioIndexInQuestion = radioButtons.indexOf(radio);
+                    });
+                });
+                answerAreaElement.appendChild(optionsContainer);
+                
+                if(radioButtons.length > 0) {
+                     setTimeout(() => { // Ensure elements are in DOM
+                        currentlyFocusedRadioIndexInQuestion = 0;
+                        radioButtons[0].focus();
+                     }, 0);
+                }
+            }
+            updateProgress();
+        }
+
+        function checkAnswer() {
+            if (submitBtn.disabled) return; 
+
+            const questionWrapper = currentQuestionQueue[currentQuestionIndexInQueue];
+            const currentQuestion = questionWrapper.originalData;
+            let userAnswer;
+            let isCorrect = false;
+
+            if (currentQuestion.type === "fill-in-the-blank") {
+                const fillAnswerInput = document.getElementById('fill-answer');
+                if (!fillAnswerInput) return; 
+                userAnswer = fillAnswerInput.value.trim().toLowerCase();
+                if (userAnswer === currentQuestion.answer.toLowerCase()) {
+                    isCorrect = true;
+                }
+            } else if (currentQuestion.type === "multiple-choice") {
+                const selectedOption = document.querySelector('input[name="mc-option"]:checked');
+                if (selectedOption) {
+                    userAnswer = selectedOption.value;
+                    if (userAnswer === currentQuestion.answer) {
+                        isCorrect = true;
+                    }
+                } else {
+                    feedbackTextElement.textContent = "Please select an option.";
+                    feedbackTextElement.className = 'incorrect-answer text-center';
+                    return;
+                }
+            }
+
+            if (isCorrect) {
+                feedbackTextElement.textContent = "Correct!";
+                feedbackTextElement.className = 'correct-answer text-center';
+                if (!questionWrapper.answeredCorrectlyInSession) {
+                    score++;
+                    questionWrapper.answeredCorrectlyInSession = true; 
+                }
+                scoreElement.textContent = score;
+            } else {
+                feedbackTextElement.textContent = "Incorrect.";
+                feedbackTextElement.className = 'incorrect-answer text-center';
+                correctAnswerTextElement.innerHTML = `The correct answer is: <span class="font-semibold text-sky-300">${currentQuestion.answer}</span>`;
+            }
+            
+            if(currentQuestion.explanation){
+                explanationTextElement.textContent = `Explanation: ${currentQuestion.explanation}`;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.classList.add('hidden');
+            nextBtn.classList.remove('hidden');
+            setTimeout(() => nextBtn.focus(), 0);
+        }
+
+        function nextQuestionLogic() { 
+            currentQuestionIndexInQueue++;
+            loadQuestion();
+        }
+
+        function updateProgress() {
+            const questionsInCurrentQueue = currentQuestionQueue.length;
+            let currentDisplayNumber;
+
+            if (questionsInCurrentQueue === 0) {
+                currentDisplayNumber = 0;
+                 currentQProgressElement.textContent = `0 of 0`;
+            } else {
+                currentDisplayNumber = currentQuestionIndexInQueue + 1;
+                let displayNum = Math.min(currentDisplayNumber, questionsInCurrentQueue);
+                let progressText = `${displayNum} of ${questionsInCurrentQueue}`;
+                 if (isRetryMode) {
+                    progressText += " (Retry Round)";
+                }
+                currentQProgressElement.textContent = progressText;
+            }
+            totalMasterQuestionsElement.textContent = masterQuestionList.length;
+        }
+
+
+        function displayEndOfQuiz() {
+            questionTextElement.textContent = "Quiz Finished!";
+            let endMessage = `<p class="text-center text-xl text-slate-200">Your final score is ${score} out of ${masterQuestionList.length}.</p>`;
+            if (masterQuestionList.length > 0 && score < masterQuestionList.length) {
+                endMessage += `<p class="text-center text-md text-slate-300 mt-2">You've mastered ${score} topics! Keep practicing to master all ${masterQuestionList.length}.</p>`;
+            } else if (masterQuestionList.length > 0) {
+                endMessage += `<p class="text-center text-md text-emerald-400 mt-2">Congratulations! You've mastered all ${masterQuestionList.length} topics!</p>`;
+            } else {
+                 endMessage = `<p class="text-center text-xl text-slate-200">No questions were loaded to score.</p>`;
+            }
+            answerAreaElement.innerHTML = endMessage;
+
+            clearFeedback();
+            submitBtn.classList.add('hidden');
+            nextBtn.classList.remove('hidden');
+            nextBtn.textContent = "Restart Quiz"; 
+        }
+
+        // --- Event Listeners ---
+        submitBtn.addEventListener('click', checkAnswer);
+        
+        nextBtn.addEventListener('click', () => {
+            if (nextBtn.textContent === "Restart Quiz") {
+                initializeQuiz();
+            } else {
+                nextQuestionLogic();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            const questionWrapper = (currentQuestionQueue.length > 0 && currentQuestionIndexInQueue < currentQuestionQueue.length) ? currentQuestionQueue[currentQuestionIndexInQueue] : null;
+            const currentQuestion = questionWrapper ? questionWrapper.originalData : null;
+            
+            if (event.key === 'Enter') {
+                if (!nextBtn.classList.contains('hidden') && document.activeElement === nextBtn) { 
+                    event.preventDefault();
+                    nextBtn.click();
+                } else if (!submitBtn.classList.contains('hidden') && !submitBtn.disabled && document.activeElement === submitBtn) {
+                     event.preventDefault();
+                     checkAnswer();
+                }
+                // Fill-in-the-blank Enter is handled by its own listener
+            } else if (currentQuestion && currentQuestion.type === "multiple-choice") {
+                const radioButtons = Array.from(answerAreaElement.querySelectorAll('input[type="radio"]'));
+                if (radioButtons.length === 0) return;
+
+                if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    let nextIndex;
+                    if (event.key === 'ArrowUp') {
+                        nextIndex = (currentlyFocusedRadioIndexInQuestion <= 0) ? radioButtons.length - 1 : currentlyFocusedRadioIndexInQuestion - 1;
+                    } else { // ArrowDown
+                        nextIndex = (currentlyFocusedRadioIndexInQuestion >= radioButtons.length - 1 || currentlyFocusedRadioIndexInQuestion < 0) ? 0 : currentlyFocusedRadioIndexInQuestion + 1;
+                    }
+                    
+                    if (radioButtons[nextIndex]) {
+                        radioButtons[nextIndex].checked = true;
+                        radioButtons[nextIndex].focus(); // This will trigger the radio's focus listener for styling
+                        // Dispatch change to ensure submitBtn gets focus if that logic is tied to 'change'
+                        const changeEvent = new Event('change', { bubbles: true });
+                        radioButtons[nextIndex].dispatchEvent(changeEvent);
+                    }
+                }
+            }
+        });
+        
+        // --- Initialize ---
+        initializeQuiz();
+
+    </script>
+</body>
+</html>
