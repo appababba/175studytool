@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bioinformatics Final Review Game</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .question-area {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+        .question-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .question-source {
+            font-size: 0.8em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .answer-prompt {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .answer-input {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .submit-btn { background-color: #007bff; color: white; }
+        .show-answer-btn { background-color: #17a2b8; color: white; }
+        .correct-btn { background-color: #28a745; color: white; }
+        .incorrect-btn { background-color: #dc3545; color: white; }
+        .next-btn { background-color: #6c757d; color: white; }
+
+        .feedback-area {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .feedback-correct { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .feedback-incorrect { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .correct-answer-display {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .stats-area {
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bioinformatics Final Review Game</h1>
+        
+        <div id="game-area">
+            <div class="question-area">
+                <p class="question-source" id="questionSource"></p>
+                <p class="question-text" id="questionText"></p>
+                <p class="answer-prompt" id="answerPrompt"></p>
+                <div id="noteArea" class="answer-prompt"></div>
+            </div>
+
+            <div id="input-area">
+                <input type="text" id="answerInput" class="answer-input" placeholder="Type your answer for short questions">
+                <button id="submitAnswerBtn" class="button submit-btn">Submit Typed Answer</button>
+            </div>
+
+            <button id="showAnswerBtn" class="button show-answer-btn">Show Correct Answer</button>
+            
+            <div id="correctAnswerDisplay" class="correct-answer-display hidden">
+                <h4>Correct Answer:</h4>
+                <p id="correctAnswerText"></p>
+            </div>
+
+            <div id="self-assessment-area" class="hidden">
+                <p>Did you answer it correctly (or mostly correctly)?</p>
+                <button id="markCorrectBtn" class="button correct-btn">Yes, I got it Right!</button>
+                <button id="markIncorrectBtn" class="button incorrect-btn">No, I need more practice.</button>
+            </div>
+            
+            <div id="feedbackArea" class="feedback-area hidden"></div>
+            <button id="nextQuestionBtn" class="button next-btn hidden">Next Question</button>
+        </div>
+
+        <div class="stats-area">
+            <p>Questions remaining in current cycle: <span id="questionsRemaining">0</span></p>
+            <p>Priority review queue size: <span id="priorityQueueSize">0</span></p>
+            <p>Total questions answered correctly in session: <span id="totalCorrect">0</span></p>
+            <p>Total questions reviewed in session: <span id="totalReviewed">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            // Exam 1 Questions
+            {
+                id: 'ex1_1a',
+                source: 'Exam 1, Q1a',
+                questionText: "Explain briefly 'splicing' in the gene expression.",
+                correctAnswerDetail: "Splicing is the process in eukaryotic gene expression where introns (non-coding regions) are removed from the pre-mRNA, and exons (coding regions) are joined together to form mature mRNA.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['biology_primer', 'splicing', 'exam1']
+            },
+            {
+                id: 'ex1_1b',
+                source: 'Exam 1, Q1b',
+                questionText: "Describe the structure of mRNA. Please specify each field with its name.",
+                correctAnswerDetail: "A mature eukaryotic mRNA typically consists of: \n1. 5' Cap: A modified guanine nucleotide at the 5' end, important for mRNA stability, nuclear export, and translation initiation.\n2. 5' Untranslated Region (5' UTR): A sequence upstream of the coding region that can regulate translation.\n3. Coding Region (or CDS - Coding Sequence): The sequence of codons that specifies the amino acid sequence of the protein. It starts with a start codon and ends with a stop codon.\n4. 3' Untranslated Region (3' UTR): A sequence downstream of the coding region that can affect mRNA stability, localization, and translation.\n5. Poly-A Tail: A string of adenine nucleotides at the 3' end, important for mRNA stability and translation.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['biology_primer', 'mrna', 'exam1']
+            },
+            {
+                id: 'ex1_1c',
+                source: 'Exam 1, Q1c',
+                questionText: "Consider the genetic code table (as provided in your exam). Write the corresponding protein sequence (amino acids, single letter code) for the following CDS: ATCTCGCTAATTTAA. Indicate where it stops.",
+                note: "You will need a standard genetic code table for this. The exam showed TAA as a stop codon.",
+                correctAnswerDetail: "Using a standard genetic code table:\nATC = I (Isoleucine)\nTCG = S (Serine)\nCTA = L (Leucine)\nATT = I (Isoleucine)\nTAA = STOP codon.\nProtein sequence: I-S-L-I (or ISLI). The sequence stops after the Isoleucine corresponding to ATT, due to the TAA stop codon.",
+                correctAnswerExact: "ISLI", // Or "I-S-L-I" - we'll make checking flexible
+                answerType: 'short_answer_flexible', // User types the sequence
+                tags: ['biology_primer', 'translation', 'genetic_code', 'exam1']
+            },
+            {
+                id: 'ex1_1d',
+                source: 'Exam 1, Q1d',
+                questionText: "What is the role of tRNA (transfer RNA), which is a non-coding RNA?",
+                correctAnswerDetail: "Transfer RNA (tRNA) plays a crucial role in protein synthesis (translation). Its primary function is to act as an adaptor molecule that matches a specific codon on the mRNA with its corresponding amino acid. Each tRNA molecule has an anticodon that base-pairs with an mRNA codon and carries the specific amino acid corresponding to that codon to the ribosome.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['biology_primer', 'trna', 'translation', 'exam1']
+            },
+            {
+                id: 'ex1_2_gene1',
+                source: 'Exam 1, Q2',
+                questionText: "Given the genomic sequence in FASTA format (from exam) and the BED format gene annotation for 'gene1' (chr-xx, 5, 12, gene1, 0, -), what is the nucleotide sequence of gene1? (Assume 1-based indexing for BED start, 0-based for FASTA string access if needed, or derive from example. The exam answer was GGATCTAA. The sequence was ATGTCGGATCTAATTGCCTATAAATCCAATGCGCTGGTTGAAGCCAGTTA...)",
+                note: "The provided genomic sequence was: ATGTCGGATCTAATTGCCTATAAATCCAATGCGCTGGTTGAAGCCAGTTATAAATTGACCCTACAGGAACAGCGTTTTTTGTTACTTTGCATCGGTCGATTGAAGTCTGGGGCTGATGCAGAATCTCCAAAATTGCAAAAGACAATGACC. BED format: chr, start (0-based), end (exclusive), name, score, strand. gene1: chr-xx 5 12 gene1 0 -. Start is 5, End is 12. This means indices 5 through 11. Sequence: GATCTAA. If strand is '-', take reverse complement. Reverse of GATCTAA is AATCTAG. Complement of AATCTAG is TTAGATC. The exam answer was GGATCTAA. This suggests coordinates might be 1-based and inclusive in problem, or a different interpretation. Let's stick to the given exam answer for memorization.",
+                correctAnswerDetail: "The exam solution indicates the nucleotide sequence of gene1 is GGATCTAA. (This might imply specific interpretation of BED coordinates and strand from the course or a slight error in the provided BED example if strictly following 0-based start, exclusive end for negative strand.) For the game, memorize the expected answer from the exam.",
+                correctAnswerExact: "GGATCTAA",
+                answerType: 'short_answer_exact',
+                tags: ['fasta', 'bed_format', 'sequence_extraction', 'exam1']
+            },
+            {
+                id: 'ex1_2_gene2',
+                source: 'Exam 1, Q2',
+                questionText: "Given the genomic sequence in FASTA format (from exam) and the BED format gene annotation for 'gene2' (chr-xx, 10, 16, gene2, 0, +), what is the nucleotide sequence of gene2? (The exam answer was CTACAGG)",
+                note: "The provided genomic sequence was: ATGTCGGATCTAATTGCCTATAAATCCAATGCGCTGGTTGAAGCCAGTTATAAATTGACCCTACAGGAACAGCGTTTTTTGTTACTTTGCATCGGTCGATTGAAGTCTGGGGCTGATGCAGAATCTCCAAAATTGCAAAAGACAATGACC. gene2: chr-xx 10 16 gene2 0 +. Start 10, End 16. Indices 10 through 15. Sequence: TTGCCT. Strand is '+'. The exam answer was CTACAGG. This is different. Let's use the exam's given answer for the purpose of this game.",
+                correctAnswerDetail: "The exam solution indicates the nucleotide sequence of gene2 is CTACAGG. (As with gene1, rely on the exam's provided answer for memorization, as direct derivation from standard BED can differ based on interpretation or specific example sequence details).",
+                correctAnswerExact: "CTACAGG",
+                answerType: 'short_answer_exact',
+                tags: ['fasta', 'bed_format', 'sequence_extraction', 'exam1']
+            },
+            {
+                id: 'ex1_3a_greedy',
+                source: 'Exam 1, Q3a',
+                questionText: "Explain briefly: greedy algorithm.",
+                correctAnswerDetail: "A greedy algorithm is an algorithmic paradigm that makes the locally optimal choice at each step with the hope of finding a global optimum. It doesn't always guarantee a globally optimal solution but is often used for its simplicity and efficiency for certain problems.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'greedy', 'exam1']
+            },
+            {
+                id: 'ex1_3a_b&b',
+                source: 'Exam 1, Q3a',
+                questionText: "Explain briefly: branch-and-bound algorithm.",
+                correctAnswerDetail: "A branch-and-bound algorithm is an algorithm design paradigm for discrete and combinatorial optimization problems. It systematically enumerates candidate solutions by building a tree of solutions. At each node (partial solution), it calculates a bound on the best possible solution achievable from that node. If the bound indicates that the node cannot lead to a solution better than the current best found, the branch is pruned (not explored further).",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'branch_and_bound', 'exam1']
+            },
+            {
+                id: 'ex1_3a_dp',
+                source: 'Exam 1, Q3a',
+                questionText: "Explain briefly: dynamic programming algorithm.",
+                correctAnswerDetail: "Dynamic programming is an algorithmic technique for solving complex problems by breaking them down into simpler, overlapping subproblems. It solves each subproblem only once and stores its solution, typically in a table, to avoid recomputing it later. This approach is effective for problems exhibiting optimal substructure and overlapping subproblems.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'dynamic_programming', 'exam1']
+            },
+            {
+                id: 'ex1_3b',
+                source: 'Exam 1, Q3b',
+                questionText: "What is called a 'polynomial time algorithm'? Answer with Big-O notation.",
+                correctAnswerDetail: "A polynomial time algorithm is an algorithm whose execution time (or number of steps) is bounded by a polynomial function of the input size 'n'. In Big-O notation, this is represented as O(n^c), where 'c' is a positive constant.",
+                answerType: 'self_assessed_descriptive', // Could be short_answer with O(n^c)
+                tags: ['algorithms', 'complexity', 'big_o', 'exam1']
+            },
+            {
+                id: 'ex1_3c',
+                source: 'Exam 1, Q3c',
+                questionText: "Show the time complexity of the selection sort (recursive version) and justify your answer.",
+                correctAnswerDetail: "The time complexity of selection sort (recursive or iterative) is O(n^2).\nJustification: In each step (or recursive call for n elements), the algorithm finds the minimum (or maximum) element from the unsorted part (which takes O(n) time) and places it in its correct position. This process is repeated n times for the n elements (or the subproblem size decreases by 1 in each recursive call). The recurrence relation can be T(n) = T(n-1) + O(n), which solves to O(n^2). For n elements, it does roughly n comparisons in the first pass, n-1 in the second, and so on, leading to a sum of an arithmetic series, which is O(n^2).",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'sorting', 'selection_sort', 'complexity', 'exam1']
+            },
+            {
+                id: 'ex1_4a',
+                source: 'Exam 1, Q4a',
+                questionText: "Define the restriction site mapping problem (Partial Digest Problem - PDP) in terms of input and output.",
+                correctAnswerDetail: "Input: A multiset L (or ΔX) containing all possible pairwise distances between restriction sites, including distances from 0 to all sites and the total length M (distance from 0 to the last site). These are the lengths of the fragments produced by a partial digest.\nOutput: A set X = {x_1, x_2, ..., x_n} representing the positions of the restriction sites along the DNA molecule, where 0 = x_1 < x_2 < ... < x_n = M, such that the set of all pairwise distances |x_j - x_i| for all i < j is equal to the input multiset L.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'pdp', 'bioinformatics_problems', 'exam1']
+            },
+            {
+                id: 'ex1_4b',
+                source: 'Exam 1, Q4b',
+                questionText: "Write (complete) the brute-force algorithm for the PDP. (M = maximum value in L, X initially {0, M})",
+                correctAnswerDetail: "Algorithm BruteForcePDP(L, n):\n1. M = maximum value in L.\n2. Initialize X = {0, M}.\n3. For every possible subset of (n-2) distinct integers {x_2, ..., x_{n-1}} chosen from the elements in L (excluding M, or from all possible values < M):\n    a. Form a candidate set of sites X_candidate = {0} U {x_2, ..., x_{n-1}} U {M}. Ensure these are sorted.\n    b. Form ΔX_candidate: the multiset of all pairwise distances |p_j - p_i| for p_i, p_j in X_candidate.\n    c. If ΔX_candidate is equal to the input multiset L:\n        Return X_candidate.\n4. Return 'no solution found'.\n(The exam's partial answer was: `M = maximum value in L; X = {0,M}; for every set of (n-2) integers xi from L: Form ΔX from X; if(ΔX = L) return X`)",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'pdp', 'brute_force', 'exam1']
+            },
+             {
+                id: 'ex1_4c',
+                source: 'Exam 1, Q4c',
+                questionText: "Show the time complexity of the brute-force PDP algorithm (as described in 4b) and justify your answer.",
+                correctAnswerDetail: "The time complexity can be very high. If there are 'm' unique fragment lengths in L from which to choose (n-2) sites, and M is the largest fragment length, the number of subsets to check can be roughly C(m, n-2) or M^(n-2) if sites can be anywhere up to M. For each subset, generating ΔX takes O(n^2) time, and comparing ΔX with L takes O(n^2 log n) if sorting is needed or O(n^2) if using frequency maps.\nThe student's answer was O(m^(n-2)) or similar, where m is the number of choices for each of the n-2 sites. If we choose n-2 elements from L (size |L|), it's roughly O(|L|^(n-2) * n^2).\nJustification: The algorithm iterates through all possible combinations of (n-2) internal cut sites. For each combination, it computes all n(n-1)/2 pairwise distances and compares them to the input set L. The number of combinations dominates the complexity.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'pdp', 'complexity', 'exam1']
+            },
+            {
+                id: 'ex1_4d',
+                source: 'Exam 1, Q4d',
+                questionText: "Describe clearly the idea of reducing the time complexity of the brute-force PDP algorithm (The resulting algorithm is named 'Improved brute-force PDP algorithm' or often involves backtracking/branch-and-bound).",
+                correctAnswerDetail: "The idea is to build the set of sites X incrementally. Instead of generating full sets of (n-2) sites and then testing, we add one site at a time. After adding a potential site, we check if all newly formed distances (between the new site and existing sites in X) are present in the multiset L. If any distance is not found in L (or its count in L is exceeded), then this path is invalid, and we backtrack, trying a different choice for the current site or a previous site. This prunes large parts of the search space early, avoiding the generation of many invalid full sets. This is a form of branch-and-bound or backtracking.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'pdp', 'optimization', 'backtracking', 'exam1']
+            },
+            {
+                id: 'ex1_5a',
+                source: 'Exam 1, Q5a',
+                questionText: "Consider the practical PDP algorithm. Explain how to set the hypothetical next cut site $x_i$. (Assume X initially contains {0, M}, and L is the multiset of fragments).",
+                correctAnswerDetail: "In the practical (often branch-and-bound) PDP algorithm, after placing 0 and M in X: \n1. Select the largest remaining fragment 'y' from the multiset L. \n2. This fragment 'y' must correspond to a distance to M or from 0, or between two unknown sites. A common heuristic is to try placing the next cut site $x_i$ such that it creates this distance 'y'.\n3. Two primary hypotheses for $x_i$ based on 'y' are: \n    a. $x_i = y$ (placing the site at distance 'y' from 0).\n    b. $x_i = M - y$ (placing the site at distance 'y' from M).\n4. The algorithm then tries one of these (e.g., M-y), and if it leads to a dead end, it backtracks and tries the other (y).",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'pdp', 'branch_and_bound', 'exam1']
+            },
+            {
+                id: 'ex1_5b',
+                source: 'Exam 1, Q5b',
+                questionText: "Consider the practical PDP algorithm. Explain how to check whether a hypothetical cut site $x_i$ is satisfactory or not after it's chosen.",
+                correctAnswerDetail: "Once a hypothetical cut site $x_i$ is chosen and added to the current set of sites X:\n1. For every existing site $x_j$ in X (where $x_j < x_i$):\n    a. Calculate the distance $d = |x_i - x_j|$.\n    b. Check if this distance 'd' is present in the multiset L (the remaining available fragments).\n2. If all such newly formed distances are found in L:\n    a. The placement of $x_i$ is currently satisfactory.\n    b. Remove these distances from L (decrement their counts).\n    c. Proceed to try and place the next cut site.\n3. If any distance 'd' is NOT found in L (or its count becomes negative):\n    a. The placement of $x_i$ is NOT satisfactory.\n    b. Backtrack: remove $x_i$ from X, add the distances back to L, and try a different choice for $x_i$ or for a previous site.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['algorithms', 'pdp', 'branch_and_bound', 'exam1']
+            },
+            {
+                id: 'ex1_5c',
+                source: 'Exam 1, Q5c',
+                questionText: "Consider the recursive version of implementing the practical PDP algorithm (branch-and-bound). What is its (worst-case) time complexity?",
+                correctAnswerDetail: "The worst-case time complexity for the practical (branch-and-bound) PDP algorithm is still exponential, often cited as something like O(2^n) or O(n * 2^(n-2)), where n is the number of sites. While it's much faster than brute-force for average cases due to pruning, in the worst case, it might still explore a significant portion of the exponential search space. The branching factor at each step (choosing the next site) can be 2 (e.g., $x_k = y$ or $x_k = M-y$).",
+                answerType: 'self_assessed_descriptive', // O(2^n) could be short answer
+                tags: ['algorithms', 'pdp', 'complexity', 'recursion', 'exam1']
+            },
+
+            // Exam 2 Questions
+            {
+                id: 'ex2_1a',
+                source: 'Exam 2, Q1a',
+                questionText: "Define the motif finding problem, i.e., what do we call 'motif finding problem'?",
+                correctAnswerDetail: "The motif finding problem is the challenge of identifying short, recurring patterns (L-mers or motifs) of a specific length (L) within a collection of biological sequences (e.g., DNA or protein). These motifs are typically statistically overrepresented or highly conserved and are presumed to have a biological significance, such as being transcription factor binding sites or protein domains. The goal is often to find a set of starting positions, one in each input sequence, such that the L-mers starting at these positions are 'most similar' to each other or to a derived consensus/median string.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['motif_finding', 'bioinformatics_problems', 'exam2']
+            },
+            {
+                id: 'ex2_1b',
+                source: 'Exam 2, Q1b',
+                questionText: "Show the total searching space (number of choices) for motif finding with the following assumptions: p DNA sequences, each with length k, and L-mer length L.",
+                correctAnswerDetail: "The total number of possible L-mers (and thus starting positions) in one sequence of length k is (k - L + 1). Since we need to choose one L-mer starting position from each of the p sequences, the total searching space (number of combinations of starting positions) is (k - L + 1)^p.",
+                correctAnswerExact: "(k-L+1)^p",
+                answerType: 'short_answer_formula',
+                tags: ['motif_finding', 'combinatorics', 'complexity', 'exam2']
+            },
+            {
+                id: 'ex2_1c',
+                source: 'Exam 2, Q1c',
+                questionText: "Consider 4 DNA sequences and L-mer size 5. For S=(4,5,6,7) (1-based starting positions), find the motif consensus string and consensus score. (Sequences: Seq1: ATGFCGGATCTAATTGCCTA, Seq2: TAAATTGACCCTACAGGAAC, Seq3: TGAAGTCTGGGGCTGATGCA, Seq4: ATTACAGCTGCGGAATATTT). The exam answer was consensus: TCGGC, score: 12.",
+                note: "Assume 'F' in ATGFCG... is a typo and the L-mer from Seq1 is TCGGA (as implied by student work). L-mers: TCGGA (S1), TGACC (S2), TCTGG (S3), GCTGC (S4). Your goal is to verify the exam's consensus TCGGC and score 12, or understand how it might have been derived. For this game, memorize the exam's result.",
+                correctAnswerDetail: "Based on the L-mers: TCGGA, TGACC, TCTGG, GCTGC.\nAlignment:\nTCGGA\nTGACC\nTCTGG\nGCTGC\n\nPosition 1: T (3), G (1) -> Consensus: T (score 3)\nPosition 2: C (2), G (1), A (1) -> Consensus: C (score 2, though student's sum implies a higher count for one base here if their total is 12 and one position got score 3 instead of 2 as derived from L-mers. E.g., if L-mers aligned better to give C(3), then score becomes 3.)\nPosition 3: G (1), A (1), T (2) -> Consensus: T (score 2) (Student's sum for score 12 ($3+2+3+2+2$) implies this position scored 3, suggesting e.g. three G's.)\nPosition 4: G (2), C (2) -> Consensus: G or C (score 2)\nPosition 5: A (1), C (2), G (1) -> Consensus: C (score 2)\n\nIf the true derived L-mers as above are used, a consensus like TCTGC gives $3+2+2+2+2=11$. The exam answer 'TCGGC' and score '12' implies a specific profile or L-mer interpretation that leads to those counts (e.g. Pos1: T=3, Pos2: C=2, Pos3: G=3, Pos4: G=2, Pos5: C=2 for consensus TCGGC and sum 12). For this game, know the exam's answer was: Consensus String: TCGGC, Consensus Score: 12. Strength: 12/20 = 60%.",
+                correctAnswerExact: "Consensus: TCGGC, Score: 12", // User might type this
+                answerType: 'self_assessed_descriptive', // Too complex for simple exact match
+                tags: ['motif_finding', 'consensus_score', 'exam2']
+            },
+            {
+                id: 'ex2_2a',
+                source: 'Exam 2, Q2a',
+                questionText: "Write a formula which describes the median string finding in terms of the total Hamming distance computation.",
+                correctAnswerDetail: "The median string V (an L-mer) is the string that minimizes the sum of minimum Hamming distances to L-mers in a set of input sequences (DNA). If $s_k$ represents an L-mer within input sequence $text_k$, the formula is:\nFind V that minimizes $TotalDistance(V, DNA) = \\sum_{k=1}^{p} \\min_{s \\in text_k} d(V,s)$, where $d(V,s)$ is the Hamming distance and p is the number of sequences.\nAlternatively, if considering a fixed set of t aligned L-mers $S = \\{s_1, s_2, ..., s_t\\}$: Find V that minimizes $TotalDistance(V, S) = \\sum_{i=1}^{t} d(V, s_i)$.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['motif_finding', 'median_string', 'hamming_distance', 'formula', 'exam2']
+            },
+            {
+                id: 'ex2_2b',
+                source: 'Exam 2, Q2b',
+                questionText: "Write a formula describing the relationship between motif finding (maximizing consensus score) and median string finding (minimizing total Hamming distance).",
+                correctAnswerDetail: "For a given set of p aligned L-mers of length L:\nLet Consensus Score be the sum of matches to the consensus string V. If $Score(s_i, V) = L - d(s_i, V)$, then:\n$max(\\sum_{i=1}^{p} Score(s_i, V)) = max(p \\cdot L - \\sum_{i=1}^{p} d(s_i, V))$.\nThis means maximizing the consensus score is equivalent to minimizing the total Hamming distance to the string V (which is the median string). So, $max(ConsensusScore) = p \\cdot L - min(TotalHammingDistanceToMedian)$.\nThe student answer was: max(Consensus Score) = min(Hamming distance) (a simplified relationship, where min refers to total Hamming distance).",
+                answerType: 'self_assessed_descriptive',
+                tags: ['motif_finding', 'median_string', 'consensus_score', 'hamming_distance', 'exam2']
+            },
+            {
+                id: 'ex2_2c',
+                source: 'Exam 2, Q2c',
+                questionText: "Write the brute-force median string search algorithm.",
+                correctAnswerDetail: "Algorithm BruteForceMedianStringSearch(DNA_sequences, L):\n1. Initialize `min_total_d_H` to infinity.\n2. Initialize `median_string_found` to null.\n3. For each possible L-mer `V` (there are 4^L such strings, e.g., from 'AAAA...A' to 'TTTT...T'):\n    a. `current_total_d_H` = 0.\n    b. For each sequence `text_k` in DNA_sequences:\n        i. `min_d_H_for_sequence_k` = infinity.\n        ii. For each L-mer `s` in `text_k`:\n            1. `d_H = HammingDistance(V, s)`.\n            2. `min_d_H_for_sequence_k = min(min_d_H_for_sequence_k, d_H)`.\n        iii. `current_total_d_H = current_total_d_H + min_d_H_for_sequence_k`.\n    c. If `current_total_d_H < min_total_d_H`:\n        i. `min_total_d_H = current_total_d_H`.\n        ii. `median_string_found = V`.\n4. Return `median_string_found`.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['motif_finding', 'median_string', 'algorithms', 'brute_force', 'exam2']
+            },
+            {
+                id: 'ex2_3a',
+                source: 'Exam 2, Q3a',
+                questionText: "Consider the branch-and-bound median finding algorithm. Describe the operations when visiting a non-leaf node in the L-mer tree (representing a prefix of a potential median string).",
+                correctAnswerDetail: "When visiting a non-leaf node representing a prefix P in the L-mer search tree:\n1. Calculate an optimistic (lower bound) for the total Hamming distance for any full L-mer that starts with this prefix P. This is often denoted `OptimisticDistance(P, DNA_sequences)`. This involves summing, for each input sequence, the minimum possible Hamming distance from any L-mer in that sequence to *any* full L-mer that could be formed by extending P.\n2. Compare `OptimisticDistance(P, DNA_sequences)` with the `best_total_distance_found_so_far` (the minimum total Hamming distance for any complete L-mer evaluated up to this point).\n3. If `OptimisticDistance(P, DNA_sequences) >= best_total_distance_found_so_far`:\n    Prune this branch: Do not explore any children of this node (Bypass). No L-mer in this subtree can be better than the current best.\n4. Else (if the optimistic distance is still promising):\n    Explore children: For each possible nucleotide (A, C, G, T) that can extend the prefix P, recursively visit the child node corresponding to P + nucleotide (next_Vertex).",
+                answerType: 'self_assessed_descriptive',
+                tags: ['motif_finding', 'median_string', 'algorithms', 'branch_and_bound', 'exam2']
+            },
+            {
+                id: 'ex2_3b',
+                source: 'Exam 2, Q3b',
+                questionText: "Show the time complexity of a greedy approach for finding a motif and justify your answer.",
+                correctAnswerDetail: "A common greedy motif finding algorithm (e.g., profile-based):\nTime Complexity: Can be around O(t * (k-L+1) * L * k_iterations) or simpler forms like O(t * k * L) if k represents (k-L+1) and iterations are fixed.\nThe student answer was O(L * n^2 * t), where n could be (k-L+1). This implies for t sequences, for each, we might iterate n times (e.g. all starting L-mers in one seq), and for each of those, scan other sequences (another n*L factor). This would be O(t * (k-L+1)^2 * L).\nJustification: Greedy algorithms make locally optimal choices. For example, start with a profile from L-mers in one sequence. Then, for each other sequence, find the L-mer that best matches the current profile. This search takes O((k-L+1)*L). This is repeated for t sequences. The profile may be updated. Because it doesn't explore all possibilities (like brute-force's (k-L+1)^p), it's faster but not guaranteed to find the global optimum. The exact complexity depends on the specific greedy strategy (e.g., how initial motifs are chosen, how profiles are updated and scored).",
+                answerType: 'self_assessed_descriptive',
+                tags: ['motif_finding', 'algorithms', 'greedy', 'complexity', 'exam2']
+            },
+            {
+                id: 'ex2_4a',
+                source: 'Exam 2, Q4a',
+                questionText: "Write the recurrence relation for computing each entry of the score table V(i,j) used in the Needleman-Wunsch global alignment algorithm.",
+                correctAnswerDetail: "Let S1 and S2 be the two sequences. Let s(S1[i], S2[j]) be the score for aligning character S1[i] with S2[j] (match/mismatch score), and let 'g' be the linear gap penalty (a negative value).\nV(i,j) = max {\n  V(i-1, j-1) + s(S1[i], S2[j]),  // Align S1[i] with S2[j]\n  V(i-1, j) + g,                  // S1[i] aligned with a gap in S2\n  V(i, j-1) + g                   // S2[j] aligned with a gap in S1\n}\nBase cases: V(0,0) = 0; V(i,0) = i * g; V(0,j) = j * g.",
+                answerType: 'self_assessed_descriptive', // Could be short_answer_formula if input method allows for it
+                tags: ['sequence_alignment', 'global_alignment', 'needleman_wunsch', 'formula', 'exam2']
+            },
+            {
+                id: 'ex2_4b',
+                source: 'Exam 2, Q4b',
+                questionText: "Describe the Longest Common Subsequence (LCS) finding problem in terms of global alignment. Hint: you should mention the scoring scheme.",
+                correctAnswerDetail: "The Longest Common Subsequence (LCS) problem can be solved using a global alignment algorithm (like Needleman-Wunsch) with the following specific scoring scheme:\n- Match score: +1 (or any positive constant)\n- Mismatch penalty: 0 (mismatches are allowed but do not contribute to the LCS length, nor do they heavily penalize if finding an alignment *containing* an LCS)\n- Gap penalty: 0 (gaps are allowed and do not penalize the score, as they correspond to skipping characters not in the LCS).\nAlternatively, for a strict LCS where mismatches are disallowed in the subsequence itself, mismatch penalty could be -infinity. The length of the LCS is the score of the optimal global alignment under this scoring scheme (match=+1, mismatch=0, gap=0).",
+                answerType: 'self_assessed_descriptive',
+                tags: ['sequence_alignment', 'lcs', 'global_alignment', 'scoring_scheme', 'exam2']
+            },
+            {
+                id: 'ex2_5a',
+                source: 'Exam 2, Q5a',
+                questionText: "Write a formula for the Affine gap penalty model and describe the linear gap penalty model in terms of the affine gap penalty model.",
+                correctAnswerDetail: "Affine Gap Penalty Model: The penalty P for a gap of length k is given by:\nP(k) = -(G_o + (k-1) * G_e) for k >= 1 (or P(k) = -(G_o + k * G_e) if G_o is for first symbol and G_e for subsequent ones. The exam had $P(k) = go + (k * ge)$, implying go for open and ge for each symbol in gap including the first extension).\nLet's use: $P(k) = -(\text{gap\_open\_penalty} + (k-1) \times \text{gap\_extension\_penalty})$.\nWhere G_o (gap_open_penalty) is the penalty for opening a gap, and G_e (gap_extension_penalty) is the penalty for extending the gap by one character. Often, G_o and G_e are positive, making the total penalty negative.\n\nLinear Gap Penalty Model: This is a special case of the affine gap penalty model where the gap open penalty (G_o) is set to 0. Thus, the penalty for a gap of length k is simply proportional to its length: P(k) = -(k * G_e). (Assuming G_e is the penalty per gap character).",
+                answerType: 'self_assessed_descriptive',
+                tags: ['sequence_alignment', 'gap_penalty', 'affine_gap_penalty', 'linear_gap_penalty', 'exam2']
+            },
+            {
+                id: 'ex2_5b_identity',
+                source: 'Exam 2, Q5b',
+                questionText: "Consider the alignment (Query: TGTACCTATCCTAGCAGATATCTGGGAG, Sbjct: TGTGCCTATCCCAGCA--T-TCTGGGAG). Compute alignment identity (%). The exam answer for matches was 23 out of 28 query positions.",
+                note: "The student's paper noted 23/28 matches, which is ~82.14%, but then wrote '70%'. We'll use 23/28 for calculation.",
+                correctAnswerDetail: "If there are 23 matches and the alignment length (based on query) is 28 positions:\nAlignment Identity = (Number of matches / Alignment length) * 100%\nIdentity = (23 / 28) * 100% ≈ 82.14%. \n(The exam paper showed '70%' as the student's final identity answer, but also 23/28, stick to the fraction for calculation if asked).",
+                correctAnswerExact: "82.14%", // or 23/28
+                answerType: 'short_answer_flexible',
+                tags: ['sequence_alignment', 'blast', 'alignment_metrics', 'exam2']
+            },
+            {
+                id: 'ex2_5b_score',
+                source: 'Exam 2, Q5b',
+                questionText: "For the same alignment (Query: TGTACCTATCCTAGCAGATATCTGGGAG, Sbjct: TGTGCCTATCCCAGCA--T-TCTGGGAG) with scoring: match=+1, mismatch=-3, gap open penalty=5, gap extension penalty=2. Compute the alignment score. (The exam's final answer was 4).",
+                note: "Gaps in Sbjct: one of length 2, one of length 1. Count matches and mismatches from the full 28 positions. If 23 matches and 3 gapped positions in query perspective, then 28-23-3 = 2 mismatches. Gap1 (len 2): -(5 + 1*2) = -7. Gap2 (len 1): -(5 + 0*2) = -5. Score = 23*(+1) + 2*(-3) - 7 - 5 = 23 - 6 - 7 - 5 = 5. The student's answer was 4. Focus on understanding the method for the game.",
+                correctAnswerDetail: "To compute the alignment score with affine gap penalties:\n1. Matches: Assume 23 matches. Score = 23 * (+1) = +23.\n2. Gaps in Sbjct: `CA--T-TC`. One gap of length 2, one gap of length 1.\n   Gap 1 (length 2): Penalty = -(gap_open + (length-1)*gap_extension) = -(5 + (2-1)*2) = -(5+2) = -7.\n   Gap 2 (length 1): Penalty = -(gap_open + (length-1)*gap_extension) = -(5 + (1-1)*2) = -(5+0) = -5.\n3. Mismatches: Total aligned columns = 28 (length of query). Columns with gaps opposite query = 3. Columns for matches/mismatches = 28-3 = 25. If 23 matches, then Mismatches = 25 - 23 = 2. Score = 2 * (-3) = -6.\nTotal Score = Matches_score + Mismatches_score + Gap_penalties = 23 - 6 - 7 - 5 = 5.\n(The student's exam answer was 4. There might be slight variations in counting or applying penalties based on specific course conventions. For the game, understand this method; the exact number match to student's '4' is less critical than process).",
+                answerType: 'self_assessed_descriptive', // Calculation is complex for auto-grade
+                tags: ['sequence_alignment', 'blast', 'alignment_score', 'affine_gap_penalty', 'exam2']
+            },
+            {
+                id: 'ex2_6',
+                source: 'Exam 2, Q6',
+                questionText: "Consider two strings, S=ACAA and T=CTCAT. Show the best local alignment and its score using Smith-Waterman with: match=+2, mismatch/indel=-1.",
+                note: "This requires filling a Smith-Waterman table. The exam answer was alignment: CA (from S) with CA (from T), Score: 4.",
+                correctAnswerDetail: "Using Smith-Waterman (match=+2, mismatch/indel=-1):\nThe table would be (S down, T across, values are H(i,j)):\n      Ø  C  T  C  A  T\n Ø    0  0  0  0  0  0\n A    0  0  0  0  2  1\n C    0  2  1  2  1  1\n A    0  1  1  1  4  3 \n A    0  0  3  2  3  3\n\nMax score in table is 4.\nTracing back from H(3,4)=4 (A of S vs A of T):\n  H(3,4) from H(2,3) + score(A,A) = 2 + 2 = 4.\n  H(2,3) is for S[C] vs T[C] = 2. This is from H(1,2) + score(C,C) = 0 + 2 = 2. (H(1,2) is S[A] vs T[T])\nBest local alignment:\nS': C A\nT': C A\nScore: 4. (C-C match: +2, A-A match: +2)",
+                correctAnswerExact: "Alignment: CA/CA, Score: 4",
+                answerType: 'self_assessed_descriptive', // Too complex for simple exact match
+                tags: ['sequence_alignment', 'local_alignment', 'smith_waterman', 'exam2']
+            },
+
+            // Final Review Questions
+            {
+                id: 'fr_blast_seeding_rationale',
+                source: 'Final Review - BLAST',
+                questionText: "What is the rationale for using 'seeding' in heuristic local alignment algorithms like BLAST?",
+                correctAnswerDetail: "The rationale for seeding is to quickly identify short, highly similar regions (seeds or 'hotspots') between sequences. Significant alignments are likely to contain at least one such short exact or near-exact match. By first finding these seeds, the algorithm can bypass a full dynamic programming comparison for every pair of sequences (which is computationally expensive) and instead focus the more intensive alignment extension steps only around these promising seed regions. This greatly speeds up the search process for finding homologous sequences in large databases.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['blast', 'seeding', 'heuristic_alignment', 'final_review']
+            },
+            {
+                id: 'fr_blast_seed_creation',
+                source: 'Final Review - BLAST',
+                questionText: "How are seeds typically created or identified in BLAST?",
+                correctAnswerDetail: "In BLAST (e.g., nucleotide BLAST), seeds are typically short exact matches of a fixed length (word size, 'W'). The query sequence is broken down into overlapping words of length W. The algorithm then rapidly searches for exact matches of these words in the database sequences, often using a pre-indexed database (like a hash table or suffix array/tree) for speed. For protein BLAST, seeds might be 'near matches' where similar amino acids (based on a scoring matrix like BLOSUM62) within a word of length W are considered, not just exact matches.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['blast', 'seeding', 'word_match', 'final_review']
+            },
+            {
+                id: 'fr_blast_ungapped_ext',
+                source: 'Final Review - BLAST',
+                questionText: "Describe 'ungapped extension' in BLAST.",
+                correctAnswerDetail: "Once a seed (short high-scoring or exact match) is found, ungapped extension involves extending this match in both directions (5' and 3') without allowing any gaps. The score is accumulated as the alignment is extended. This extension continues as long as the alignment score increases or stays above a certain threshold. It stops when the score drops by more than a certain amount (the X drop-off parameter) from the maximum score achieved during the extension.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['blast', 'alignment_extension', 'ungapped_alignment', 'final_review']
+            },
+            {
+                id: 'fr_blast_gapped_ext',
+                source: 'Final Review - BLAST',
+                questionText: "Describe 'gapped extension' in BLAST.",
+                correctAnswerDetail: "After ungapped extension identifies promising regions (High-scoring Segment Pairs - HSPs), gapped extension is performed around these HSPs. This step uses a dynamic programming algorithm (similar to Smith-Waterman but often optimized or bounded) to allow for insertions and deletions (gaps) in the alignment. This can often result in a longer, higher-scoring alignment than the initial ungapped HSP, especially if the sequences have diverged more significantly. This also has a drop-off parameter to limit computation.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['blast', 'alignment_extension', 'gapped_alignment', 'final_review']
+            },
+            {
+                id: 'fr_blast_x_dropoff',
+                source: 'Final Review - BLAST',
+                questionText: "What is the role of the 'X drop-off parameter' in BLAST extensions (both gapped and ungapped)?",
+                correctAnswerDetail: "The X drop-off parameter determines how far the alignment score is allowed to decrease from the maximum score achieved so far during an extension before the extension process is terminated. If the current score drops by X or more below the peak score for that extension, the extension is stopped. This heuristic helps to limit the computational effort spent on extending alignments that are unlikely to be significant, pruning the search space.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['blast', 'alignment_extension', 'dropoff_parameter', 'final_review']
+            },
+            {
+                id: 'fr_blast_evalue',
+                source: 'Final Review - BLAST',
+                questionText: "Define E-value (Expect value) in the context of BLAST.",
+                correctAnswerDetail: "The Expect value (E-value) of an alignment is a statistical measure that represents the number of distinct alignments with a score equal to or greater than the observed score (S) that would be expected to occur purely by chance when searching a database of a particular size. A lower E-value indicates a more statistically significant match (i.e., less likely to be due to random chance). For example, an E-value of 0.01 means one would expect to see such a match by chance about once in 100 searches of similar databases/queries.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['blast', 'statistics', 'e_value', 'final_review']
+            },
+            {
+                id: 'fr_gene_pred_stat',
+                source: 'Final Review - Gene Prediction',
+                questionText: "Describe the statistical approach to gene prediction.",
+                correctAnswerDetail: "The statistical approach to gene prediction relies on identifying statistical patterns and signals within the DNA sequence that are characteristic of genes. This includes:\n1. Identifying open reading frames (ORFs).\n2. Recognizing codon usage bias (genes often have different codon preferences than non-coding regions).\n3. Locating promoter sequences, transcription start sites, and termination signals.\n4. Identifying splice site consensus sequences (e.g., GT at the 5' end of an intron, AG at the 3' end of an intron in eukaryotes) to predict exon-intron boundaries.\nThese methods often use probabilistic models like Hidden Markov Models (HMMs) that are trained on known gene structures.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['gene_prediction', 'statistical_methods', 'hmm', 'splice_sites', 'final_review']
+            },
+            {
+                id: 'fr_gene_pred_similarity',
+                source: 'Final Review - Gene Prediction',
+                questionText: "Describe the similarity-based approach to gene prediction.",
+                correctAnswerDetail: "The similarity-based approach (also known as homology-based or comparative approach) predicts genes by identifying similarities between a newly sequenced genome and known gene or protein sequences from other organisms (or the same organism if EST/cDNA data is available). This often involves:\n1. Using tools like BLAST to align known protein sequences or expressed sequence tags (ESTs)/cDNAs against the genomic DNA.\n2. Hits indicate potential coding regions (exons).\n3. If a protein is used, the alignment needs to account for introns in the genomic DNA (spliced alignment). The problem then becomes assembling these putative exons into a coherent gene structure that best matches the known sequence.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['gene_prediction', 'similarity_methods', 'homology', 'blast', 'final_review']
+            },
+            {
+                id: 'fr_exon_chaining_problem',
+                source: 'Final Review - Gene Prediction',
+                questionText: "What is the Exon Chaining Problem?",
+                correctAnswerDetail: "The Exon Chaining Problem arises in similarity-based gene prediction. After identifying multiple potential exons (putative exons) in a genomic sequence that show similarity to a target protein or cDNA, the problem is to select a subset of these putative exons that are non-overlapping, ordered correctly (collinear), and compatible with splicing rules, such that they form a chain that maximizes a total score (e.g., sum of alignment scores of individual exons). This chain represents the predicted gene structure.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['gene_prediction', 'exon_chaining', 'bioinformatics_problems', 'final_review']
+            },
+            {
+                id: 'fr_exon_chaining_dp',
+                source: 'Final Review - Gene Prediction',
+                questionText: "Briefly describe how dynamic programming can be used to solve the Exon Chaining Problem.",
+                correctAnswerDetail: "Dynamic programming can solve the Exon Chaining Problem efficiently. The putative exons are typically sorted by their start or end positions. A score S[i] is computed for each exon 'i', representing the maximum score of a valid chain ending with exon 'i'. To compute S[i], the algorithm considers all exons 'j' that could validly precede exon 'i' (i.e., exon 'j' ends before exon 'i' starts and they are compatible). S[i] is then calculated as the score of exon 'i' itself plus the maximum S[j] found among all such valid preceding exons 'j' (plus any gap/intron penalties/scores if applicable). The overall best chain is found by taking the maximum S[i] over all exons.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['gene_prediction', 'exon_chaining', 'dynamic_programming', 'final_review']
+            },
+            {
+                id: 'fr_spliced_alignment_def',
+                source: 'Final Review - Gene Prediction',
+                questionText: "What is Spliced Alignment in the context of gene prediction?",
+                correctAnswerDetail: "Spliced alignment is the process of aligning a protein sequence or a mature mRNA sequence (which only contains exons) to a genomic DNA sequence that contains introns. Unlike standard sequence alignment, spliced alignment must account for large gaps in the genomic DNA sequence that correspond to introns, which are spliced out of the mRNA. The alignment identifies the exon segments in the genomic DNA and how they piece together to match the target protein/mRNA sequence, effectively predicting the exon-intron structure.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['gene_prediction', 'spliced_alignment', 'sequence_alignment', 'final_review']
+            },
+            {
+                id: 'fr_spliced_alignment_io',
+                source: 'Final Review - Gene Prediction',
+                questionText: "What are the typical inputs and output for a spliced alignment algorithm used for gene prediction?",
+                correctAnswerDetail: "Inputs:\n1. A genomic DNA sequence (G).\n2. A target protein sequence or a mature mRNA/cDNA sequence (T).\n3. (Optionally) A set of candidate exons or known splice site signals.\n4. Scoring parameters (match, mismatch, gap penalties, intron penalties).\n\nOutput:\nAn optimal alignment that shows how segments of the genomic sequence (exons) align to the target sequence, with intervening introns in the genomic sequence properly gapped. This output implicitly defines the predicted exon-intron structure of the gene in G that corresponds to T, along with an alignment score.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['gene_prediction', 'spliced_alignment', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_junctions',
+                source: 'Final Review - RNA-seq',
+                questionText: "In RNA-seq data processing, why is it important to prepare or specifically consider junction regions when mapping reads?",
+                correctAnswerDetail: "It's important to consider junction regions because mature mRNA in eukaryotes is formed by splicing out introns and joining exons. Therefore, some RNA-seq reads will span across exon-exon junctions. Standard genomic mappers might fail to align these 'spliced reads' correctly as they would see a large gap (the intron) if mapped linearly. Spliced aligners or junction-aware mappers are designed to identify these reads by aligning parts of the read to one exon and other parts to another, thereby accurately mapping reads that cross splice junctions and helping to identify exon boundaries and alternative splicing events.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['rna_seq', 'read_mapping', 'splicing', 'junctions', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_counting',
+                source: 'Final Review - RNA-seq',
+                questionText: "How are mapped RNA-seq reads typically counted for gene expression analysis?",
+                correctAnswerDetail: "Mapped RNA-seq reads are typically counted at different levels:\n1. Exon-level: Counting reads that map to individual exons. This can be useful for studying alternative splicing (differential exon usage).\n2. Junction-level: Counting reads that span specific exon-exon junctions, also important for alternative splicing analysis.\n3. Gene-level: Aggregating counts from all exons (and sometimes junctions) belonging to a specific gene to get an overall measure of that gene's expression. This is the most common level for differential gene expression analysis.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['rna_seq', 'quantification', 'read_counting', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_rpkm_fpkm',
+                source: 'Final Review - RNA-seq',
+                questionText: "What is RPKM (or FPKM) and why is it used in RNA-seq analysis?",
+                correctAnswerDetail: "RPKM stands for Reads Per Kilobase of exon model per Million mapped reads. FPKM (Fragments Per Kilobase of exon model per Million mapped fragments) is similar but used for paired-end RNA-seq where fragments are counted instead of individual reads.\nThey are used as a method of normalizing read counts to account for two main biases:\n1. Sequencing depth: Different samples might have different total numbers of mapped reads.\n2. Gene/transcript length: Longer genes/transcripts will naturally accumulate more reads than shorter ones, even if expressed at similar levels per base.\nBy normalizing for both factors, RPKM/FPKM values provide a more comparable measure of gene expression levels across different genes and different samples.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['rna_seq', 'normalization', 'rpkm', 'fpkm', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_rpkm_formula',
+                source: 'Final Review - RNA-seq',
+                questionText: "Write the formula for RPKM.",
+                correctAnswerDetail: "RPKM = (Number of reads mapped to a gene * 10^9) / (Gene length in base pairs * Total number of mapped reads in the sample)",
+                correctAnswerExact: "(num_reads * 10^9) / (gene_length_bp * total_mapped_reads)", // Textual representation
+                answerType: 'short_answer_formula',
+                tags: ['rna_seq', 'normalization', 'rpkm', 'formula', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_effective_length',
+                source: 'Final Review - RNA-seq',
+                questionText: "What is 'effective gene length' in RNA-seq analysis, and why is it important?",
+                correctAnswerDetail: "Effective gene length refers to the portion of a gene from which uniquely mappable reads can actually originate. It might be shorter than the annotated gene length because:\n1. Some regions of the gene might be unmappable due to low complexity or repetitive sequences (these are 'dead zones').\n2. For RNA-seq, reads typically come only from exons, so the sum of exon lengths is often a starting point, further adjusted for mappability.\nIt's important because using the true (annotated) gene length in RPKM/FPKM calculations without considering mappability can lead to inaccurate expression estimates, especially for genes with significant unmappable regions. Effective length aims to provide a more accurate denominator for normalization.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['rna_seq', 'normalization', 'effective_gene_length', 'mappability', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_dead_zones',
+                source: 'Final Review - RNA-seq',
+                questionText: "How can 'dead zones' (dz) affect RNA-seq quantification, and how are they typically identified (e.g., due to duplicated regions)?",
+                correctAnswerDetail: "Dead zones are regions within a gene or genome where reads cannot be uniquely mapped, often due to them being identical or highly similar to other regions (e.g., duplicated regions, repetitive elements). \nAffect on quantification: If reads originating from these zones are discarded or ambiguously assigned, the read count for genes overlapping these zones will be artificially lower, leading to an underestimation of their true expression levels when using normalization methods like RPKM/FPKM if the full gene length is used.\nIdentification: Dead zones due to duplicated regions (X and Y) can be identified by finding segments where a read of a given length could map perfectly to both X and Y. If a read could start at multiple locations within X and Y, those starting positions contribute to the dead zone. The length of the dead zone is related to the length of the duplicated segment and the read length. For example, if region X of length |X| is duplicated, and reads are length l_read, any read starting in the first |X| - l_read + 1 positions of X could also map to Y, making this portion effectively a dead zone for unique mapping.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['rna_seq', 'quantification', 'dead_zones', 'mappability', 'final_review']
+            },
+            {
+                id: 'fr_trees_suffix',
+                source: 'Final Review - Suffix/Keyword Trees',
+                questionText: "What is a Suffix Tree primarily used for in bioinformatics?",
+                correctAnswerDetail: "A Suffix Tree is a data structure built from a single text string (e.g., a reference genome or a large sequence). It is primarily used for fast and efficient searching of multiple patterns (substrings) within that text. Common applications include finding exact matches, locating repeats, finding longest common substrings between two sequences (using a generalized suffix tree), and other string processing tasks.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['data_structures', 'suffix_tree', 'string_matching', 'final_review']
+            },
+            {
+                id: 'fr_trees_keyword',
+                source: 'Final Review - Suffix/Keyword Trees',
+                questionText: "What is a Keyword Tree (e.g., Aho-Corasick automaton) primarily used for?",
+                correctAnswerDetail: "A Keyword Tree (like an Aho-Corasick automaton) is a data structure built from a set of multiple patterns (keywords). It is primarily used to efficiently find all occurrences of these pre-defined keywords within a given input text string in a single pass. It's particularly useful when you have many patterns to search for simultaneously in a long text.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['data_structures', 'keyword_tree', 'aho_corasick', 'string_matching', 'final_review']
+            },
+            {
+                id: 'fr_trees_difference',
+                source: 'Final Review - Suffix/Keyword Trees',
+                questionText: "What is the main difference in preparation and usage between a Suffix Tree and a Keyword Tree for pattern matching?",
+                correctAnswerDetail: "Preparation:\n- Suffix Tree: Built from a single, usually long, text/reference sequence.\n- Keyword Tree: Built from a set of multiple, usually shorter, pattern strings (keywords).\n\nUsage for Pattern Matching:\n- Suffix Tree: Once built for the text, you can efficiently search for any given pattern string within that text.\n- Keyword Tree: Once built for the set of patterns, you can efficiently scan a given text string to find occurrences of any of those pre-defined patterns.",
+                answerType: 'self_assessed_descriptive',
+                tags: ['data_structures', 'suffix_tree', 'keyword_tree', 'string_matching', 'final_review']
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let currentQuestionPool = [];
+        let priorityReviewQueue = [];
+        let currentQuestion = null;
+        let totalCorrectAnswers = 0;
+        let totalReviewedQuestions = 0;
+
+        const questionSourceEl = document.getElementById('questionSource');
+        const questionTextEl = document.getElementById('questionText');
+        const answerPromptEl = document.getElementById('answerPrompt');
+        const noteAreaEl = document.getElementById('noteArea');
+        const answerInputEl = document.getElementById('answerInput');
+        const submitAnswerBtn = document.getElementById('submitAnswerBtn');
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
+        const correctAnswerDisplayEl = document.getElementById('correctAnswerDisplay');
+        const correctAnswerTextEl = document.getElementById('correctAnswerText');
+        const selfAssessmentAreaEl = document.getElementById('self-assessment-area');
+        const markCorrectBtn = document.getElementById('markCorrectBtn');
+        const markIncorrectBtn = document.getElementById('markIncorrectBtn');
+        const feedbackAreaEl = document.getElementById('feedbackArea');
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const inputAreaEl = document.getElementById('input-area');
+
+        const questionsRemainingEl = document.getElementById('questionsRemaining');
+        const priorityQueueSizeEl = document.getElementById('priorityQueueSize');
+        const totalCorrectEl = document.getElementById('totalCorrect');
+        const totalReviewedEl = document.getElementById('totalReviewed');
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function loadQuestionPool() {
+            currentQuestionPool = [...questions];
+            shuffleArray(currentQuestionPool);
+            priorityReviewQueue = []; // Reset priority queue
+            questions.forEach(q => q.incorrectlyAnswered = false); // Reset flag
+            updateStats();
+        }
+
+        function displayQuestion() {
+            feedbackAreaEl.classList.add('hidden');
+            nextQuestionBtn.classList.add('hidden');
+            correctAnswerDisplayEl.classList.add('hidden');
+            selfAssessmentAreaEl.classList.add('hidden');
+            answerInputEl.value = '';
+
+            if (priorityReviewQueue.length > 0 && Math.random() < 0.6) { // 60% chance to pull from priority
+                currentQuestion = priorityReviewQueue.shift();
+            } else if (currentQuestionPool.length > 0) {
+                currentQuestion = currentQuestionPool.shift();
+            } else if (priorityReviewQueue.length > 0) { // If main pool empty, always pull from priority
+                 currentQuestion = priorityReviewQueue.shift();
+            } else {
+                questionTextEl.textContent = "Congratulations! You've reviewed all questions in this cycle. Reload to start again or review priority items if any.";
+                showAnswerBtn.classList.add('hidden');
+                inputAreaEl.classList.add('hidden');
+                updateStats();
+                return;
+            }
+            
+            questionSourceEl.textContent = `Source: ${currentQuestion.source}`;
+            questionTextEl.textContent = currentQuestion.questionText;
+            answerPromptEl.textContent = currentQuestion.answerPrompt || (currentQuestion.answerType === 'self_assessed_descriptive' ? "Think about your answer, then click 'Show Correct Answer'." : "Type your answer above.");
+            noteAreaEl.textContent = currentQuestion.note || "";
+
+
+            if (currentQuestion.answerType === 'self_assessed_descriptive') {
+                inputAreaEl.classList.add('hidden');
+                showAnswerBtn.classList.remove('hidden');
+                submitAnswerBtn.classList.add('hidden');
+            } else if (currentQuestion.answerType === 'short_answer_exact' || currentQuestion.answerType === 'short_answer_flexible' || currentQuestion.answerType === 'short_answer_formula') {
+                inputAreaEl.classList.remove('hidden');
+                answerInputEl.placeholder = "Type your exact answer here";
+                showAnswerBtn.classList.remove('hidden'); // Still allow showing answer
+                submitAnswerBtn.classList.remove('hidden');
+            }
+            updateStats();
+        }
+
+        showAnswerBtn.addEventListener('click', () => {
+            correctAnswerTextEl.innerHTML = currentQuestion.correctAnswerDetail.replace(/\n/g, '<br>');
+            correctAnswerDisplayEl.classList.remove('hidden');
+            selfAssessmentAreaEl.classList.remove('hidden');
+            showAnswerBtn.classList.add('hidden');
+            submitAnswerBtn.classList.add('hidden');
+            inputAreaEl.classList.add('hidden');
+        });
+
+        submitAnswerBtn.addEventListener('click', () => {
+            const userAnswer = answerInputEl.value.trim();
+            let isCorrect = false;
+            if (!currentQuestion || !userAnswer) return;
+
+            if (currentQuestion.answerType === 'short_answer_exact') {
+                isCorrect = userAnswer.toLowerCase() === currentQuestion.correctAnswerExact.toLowerCase();
+            } else if (currentQuestion.answerType === 'short_answer_flexible') {
+                // For flexible, e.g. ISLI vs I-S-L-I
+                const simplifiedUserAnswer = userAnswer.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const simplifiedCorrectAnswer = currentQuestion.correctAnswerExact.toLowerCase().replace(/[^a-z0-9]/g, '');
+                isCorrect = simplifiedUserAnswer === simplifiedCorrectAnswer;
+            } else if (currentQuestion.answerType === 'short_answer_formula') {
+                 // Simple check for formulas, might need more robust parsing for complex cases
+                isCorrect = userAnswer.replace(/\s+/g, '').toLowerCase() === currentQuestion.correctAnswerExact.replace(/\s+/g, '').toLowerCase();
+            }
+
+
+            feedbackAreaEl.classList.remove('hidden');
+            if (isCorrect) {
+                feedbackAreaEl.textContent = "Correct!";
+                feedbackAreaEl.className = 'feedback-area feedback-correct';
+                totalCorrectAnswers++;
+                currentQuestion.incorrectlyAnswered = false;
+            } else {
+                feedbackAreaEl.innerHTML = `Incorrect. The expected answer involves: <span style="font-weight:bold;">${currentQuestion.correctAnswerExact || currentQuestion.correctAnswerDetail.substring(0,100)+'...'}</span><br>See full details below if needed.`;
+                feedbackAreaEl.className = 'feedback-area feedback-incorrect';
+                if (currentQuestion.id) { // Ensure it's a full question object
+                    currentQuestion.incorrectlyAnswered = true;
+                    priorityReviewQueue.push(currentQuestion); // Add to front for immediate re-review later
+                    shuffleArray(priorityReviewQueue); // Shuffle priority to vary re-ask order slightly
+                }
+            }
+            correctAnswerTextEl.innerHTML = currentQuestion.correctAnswerDetail.replace(/\n/g, '<br>');
+            correctAnswerDisplayEl.classList.remove('hidden');
+            nextQuestionBtn.classList.remove('hidden');
+            submitAnswerBtn.classList.add('hidden');
+            selfAssessmentAreaEl.classList.add('hidden'); // No self-assessment if auto-graded
+            totalReviewedQuestions++;
+            updateStats();
+        });
+
+        markCorrectBtn.addEventListener('click', () => {
+            feedbackAreaEl.textContent = "Great! Marked as correct.";
+            feedbackAreaEl.className = 'feedback-area feedback-correct';
+            feedbackAreaEl.classList.remove('hidden');
+            currentQuestion.incorrectlyAnswered = false; // Reset flag if previously incorrect
+            // Remove from priority queue if it was there and now is correct
+            const indexInPriority = priorityReviewQueue.findIndex(q => q.id === currentQuestion.id);
+            if (indexInPriority > -1) {
+                priorityReviewQueue.splice(indexInPriority, 1);
+            }
+            totalCorrectAnswers++;
+            totalReviewedQuestions++;
+            finalizeQuestionHandling();
+        });
+
+        markIncorrectBtn.addEventListener('click', () => {
+            feedbackAreaEl.textContent = "No problem! This question will be added to your priority review queue.";
+            feedbackAreaEl.className = 'feedback-area feedback-incorrect';
+            feedbackAreaEl.classList.remove('hidden');
+            
+            if (currentQuestion.id) { // Ensure it's a full question object
+                 // Add to priority queue only if not already there from a previous incorrect attempt in this session for this specific instance
+                if (!priorityReviewQueue.find(q => q.id === currentQuestion.id && q.incorrectlyAnswered)) {
+                     currentQuestion.incorrectlyAnswered = true; // Mark it to be re-added
+                     priorityReviewQueue.push(currentQuestion);
+                     shuffleArray(priorityReviewQueue);
+                } else if (!currentQuestion.incorrectlyAnswered) { // If it was from main pool and marked incorrect
+                    currentQuestion.incorrectlyAnswered = true;
+                    priorityReviewQueue.push(currentQuestion);
+                    shuffleArray(priorityReviewQueue);
+                }
+            }
+            totalReviewedQuestions++;
+            finalizeQuestionHandling();
+        });
+        
+        function finalizeQuestionHandling() {
+            selfAssessmentAreaEl.classList.add('hidden');
+            nextQuestionBtn.classList.remove('hidden');
+            updateStats();
+        }
+
+        nextQuestionBtn.addEventListener('click', () => {
+            displayQuestion();
+        });
+
+        function updateStats() {
+            questionsRemainingEl.textContent = currentQuestionPool.length;
+            priorityQueueSizeEl.textContent = priorityReviewQueue.length;
+            totalCorrectEl.textContent = totalCorrectAnswers;
+            totalReviewedEl.textContent = totalReviewedQuestions;
+        }
+
+        // Initialize
+        loadQuestionPool();
+        displayQuestion();
+    </script>
+</body>
+</html>
