@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bioinformatics MCQ Review Game</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            background-color: #2c3e50; /* Dark blue-grey background */
+            color: #ecf0f1; /* Light text color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 750px; 
+            background: #34495e; /* Darker container background */
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 {
+            color: #3498db; /* Bright blue for title */
+            margin-bottom: 25px;
+        }
+        .question-area {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #46627f; /* Slightly lighter question box */
+            border-radius: 8px;
+            text-align: left;
+        }
+        .question-text {
+            font-size: 1.15em; 
+            margin-bottom: 10px;
+        }
+        .question-source {
+            font-size: 0.8em;
+            color: #bdc3c7; /* Lighter grey for source */
+            margin-bottom: 15px;
+        }
+        .note-area {
+            font-style: italic;
+            color: #bdc3c7;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        .options-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .option-button {
+            padding: 12px 15px;
+            border: 1px solid #56708c;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            background-color: #2c3e50; /* Dark button background */
+            color: #ecf0f1;
+            text-align: left;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .option-button:hover {
+            background-color: #56708c;
+            border-color: #7f8c8d;
+        }
+        .option-button.correct {
+            background-color: #2ecc71 !important;
+            border-color: #27ae60 !important;
+            color: white !important;
+        }
+        .option-button.incorrect {
+            background-color: #e74c3c !important;
+            border-color: #c0392b !important;
+            color: white !important;
+        }
+        .option-button.selected-incorrect {
+            background-color: #c0392b; /* User clicked this wrong one */
+            border-color: #e74c3c;
+        }
+
+        .button { /* For Next button */
+            padding: 12px 20px;
+            margin: 8px 5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        .next-btn { background-color: #3498db; color: white; width: 100%; }
+        .next-btn:hover { background-color: #2980b9; }
+
+        .feedback-area {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .feedback-correct-text { color: #2ecc71; }
+        .feedback-incorrect-text { color: #e74c3c; }
+        
+        .stats-area, .skip-area {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #46627f; 
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #bdc3c7;
+        }
+        .stats-area p, .skip-area p { margin: 8px 0; }
+        .stats-area span { font-weight: bold; color: #ecf0f1; }
+        #skipToQuestionSelect {
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            border: 1px solid #56708c;
+            margin-left: 10px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bioinformatics</h1>
+        
+        <div id="game-area">
+            <div class="question-area">
+                <p class="question-source" id="questionSource">Source: N/A</p>
+                <p class="question-text" id="questionText">Loading question...</p>
+                <div id="noteArea" class="note-area"></div>
+            </div>
+
+            <div id="optionsArea" class="options-area">
+                </div>
+            
+            <div id="feedbackArea" class="feedback-area hidden"></div>
+            <button id="nextQuestionBtn" class="button next-btn hidden">Next Question</button>
+        </div>
+
+        <div class="stats-area">
+            <p>Question Progress: <span id="questionProgress">0 / 0</span> (Current Tier)</p>
+            <p>Priority Review Queue: <span id="priorityQueueSize">0</span></p>
+            <p>Overall Score: <span id="overallScore">0 / 0</span> (Session Total)</p>
+        </div>
+
+        <div class="skip-area">
+            <label for="skipToQuestionSelect">Skip to Question:</label>
+            <select id="skipToQuestionSelect"></select>
+        </div>
+        <p class="footer">Happy Studying! Inspired by the Math Academy Way.</p>
+    </div>
+
+    <script>
+        const questions = [
+            // Tier 1: Foundational Concepts - Multiple Choice
+            {
+                id: 'fr_what_is_bioinformatics_mcq', tier: 1, source: 'General Prerequisite',
+                questionText: "Bioinformatics primarily involves:",
+                options: [
+                    { text: "Conducting wet lab experiments on DNA.", correct: false },
+                    { text: "Developing methods and software tools for understanding biological data.", correct: true },
+                    { text: "Manufacturing pharmaceutical drugs.", correct: false },
+                    { text: "Studying animal behavior in natural habitats.", correct: false }
+                ],
+                tags: ['definitions', 'bioinformatics_basics']
+            },
+            {
+                id: 'ex1_1a_mcq', tier: 1, source: 'Exam 1, Q1a',
+                questionText: "In eukaryotic gene expression, splicing is the process where:",
+                options: [
+                    { text: "Introns are transcribed into proteins, and exons are discarded.", correct: false },
+                    { text: "Exons are removed from pre-mRNA, and introns are joined together.", correct: false },
+                    { text: "Introns are removed from pre-mRNA, and exons are joined together to form mature mRNA.", correct: true },
+                    { text: "The poly-A tail is added, and the 5' cap is removed.", correct: false }
+                ],
+                tags: ['biology_primer', 'splicing', 'exam1']
+            },
+            {
+                id: 'ex1_1d_mcq', tier: 1, source: 'Exam 1, Q1d',
+                questionText: "What is the primary role of tRNA (transfer RNA) in protein synthesis?",
+                options: [
+                    { text: "It carries the genetic code from the nucleus to the cytoplasm.", correct: false },
+                    { text: "It acts as an adaptor molecule, matching mRNA codons with specific amino acids.", correct: true },
+                    { text: "It forms the structural core of the ribosome.", correct: false },
+                    { text: "It unwinds the DNA double helix for transcription.", correct: false }
+                ],
+                tags: ['biology_primer', 'trna', 'translation', 'exam1']
+            },
+            {
+                id: 'fr_blast_seeding_rationale_mcq', tier: 1, source: 'Final Review - BLAST',
+                questionText: "What is the main rationale for using 'seeding' in BLAST?",
+                options: [
+                    { text: "To ensure 100% accuracy in alignments.", correct: false },
+                    { text: "To perform global alignments instead of local.", correct: false },
+                    { text: "To quickly identify promising regions for more intensive alignment, speeding up search.", correct: true },
+                    { text: "To translate DNA sequences into protein sequences before alignment.", correct: false }
+                ],
+                tags: ['blast', 'seeding', 'final_review']
+            },
+            {
+                id: 'fr_blast_evalue_mcq', tier: 1, source: 'Final Review - BLAST',
+                questionText: "A lower E-value in a BLAST search result indicates:",
+                options: [
+                    { text: "A less statistically significant match.", correct: false },
+                    { text: "The alignment score is low.", correct: false },
+                    { text: "A more statistically significant match (less likely due to chance).", correct: true },
+                    { text: "The query sequence is very short.", correct: false }
+                ],
+                tags: ['blast', 'statistics', 'e_value', 'final_review']
+            },
+            {
+                id: 'ex2_1a_mcq', tier: 1, source: 'Exam 2, Q1a',
+                questionText: "The 'motif finding problem' in bioinformatics aims to identify:",
+                options: [
+                    { text: "The longest gene in a genome.", correct: false },
+                    { text: "Short, recurring, and conserved patterns (L-mers) in a set of sequences.", correct: true },
+                    { text: "The evolutionary relationship between two species.", correct: false },
+                    { text: "All possible protein structures for a given sequence.", correct: false }
+                ],
+                tags: ['motif_finding', 'definitions', 'exam2']
+            },
+            {
+                id: 'fr_gene_pred_approaches_mcq', tier: 1, source: 'Final Review - Gene Prediction',
+                questionText: "Which of these are two primary approaches to gene prediction mentioned in the review?",
+                options: [
+                    { text: "Mass spectrometry and X-ray crystallography.", correct: false },
+                    { text: "Statistical methods and Similarity-based methods.", correct: true },
+                    { text: "Phylogenetic analysis and Population genetics.", correct: false },
+                    { text: "RNA interference and CRISPR-Cas9 editing.", correct: false }
+                ],
+                tags: ['gene_prediction', 'definitions', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_rpkm_purpose_mcq', tier: 1, source: 'Final Review - RNA-seq',
+                questionText: "RPKM/FPKM values are used in RNA-seq analysis primarily to normalize read counts for:",
+                options: [
+                    { text: "GC content and codon bias.", correct: false },
+                    { text: "Sequencing errors and PCR duplicates.", correct: false },
+                    { text: "Sequencing depth and gene/transcript length.", correct: true },
+                    { text: "Alternative splicing events and intron retention.", correct: false }
+                ],
+                tags: ['rna_seq', 'normalization', 'rpkm', 'fpkm', 'final_review']
+            },
+            {
+                id: 'fr_trees_difference_mcq', tier: 1, source: 'Final Review - Suffix/Keyword Trees',
+                questionText: "A key difference between Suffix Trees and Keyword Trees (e.g., Aho-Corasick) is:",
+                options: [
+                    { text: "Suffix Trees are for proteins, Keyword Trees are for DNA.", correct: false },
+                    { text: "Suffix Trees are built from one text to find many patterns; Keyword Trees from many patterns to search one text.", correct: true },
+                    { text: "Suffix Trees can only find exact matches, Keyword Trees allow mismatches.", correct: false },
+                    { text: "Keyword Trees are faster but use significantly more memory than Suffix Trees.", correct: false }
+                ],
+                tags: ['data_structures', 'string_matching', 'final_review']
+            },
+             {
+                id: 'fr_blast_heuristic_mcq', tier: 1, source: 'Final Review - BLAST',
+                questionText: "BLAST is considered a heuristic local alignment tool because it:",
+                options: [
+                    { text: "Guarantees finding the mathematically optimal alignment score.", correct: false },
+                    { text: "Uses an approach that is fast and usually finds good alignments, but doesn't guarantee optimality.", correct: true },
+                    { text: "Only works for very short sequences.", correct: false },
+                    { text: "Performs global alignments on entire genomes.", correct: false }
+                ],
+                tags: ['blast', 'heuristic_alignment', 'final_review']
+            },
+
+            // Tier 2: Core Exam Applications / Algorithms - Multiple Choice
+            {
+                id: 'ex1_1b_mrna_components_mcq', tier: 2, source: 'Exam 1, Q1b',
+                questionText: "Which of the following is NOT typically part of a mature eukaryotic mRNA structure?",
+                options: [
+                    { text: "5' Cap", correct: false },
+                    { text: "Introns", correct: true },
+                    { text: "Coding Sequence (CDS)", correct: false },
+                    { text: "Poly-A Tail", correct: false }
+                ],
+                tags: ['biology_primer', 'mrna', 'exam1']
+            },
+            {
+                id: 'ex1_3a_greedy_char_mcq', tier: 2, source: 'Exam 1, Q3a',
+                questionText: "A defining characteristic of a greedy algorithm is that it:",
+                options: [
+                    { text: "Always finds the globally optimal solution.", correct: false },
+                    { text: "Makes the choice that seems best at the current moment.", correct: true },
+                    { text: "Requires exponential time complexity.", correct: false },
+                    { text: "Uses a table to store solutions to subproblems.", correct: false }
+                ],
+                tags: ['algorithms', 'greedy', 'exam1']
+            },
+            {
+                id: 'ex1_3b_poly_time_mcq', tier: 2, source: 'Exam 1, Q3b',
+                questionText: "A polynomial time algorithm has a time complexity best represented in Big-O notation as:",
+                options: [
+                    { text: "O(log n)", correct: false },
+                    { text: "O(n^c), where c is a constant", correct: true },
+                    { text: "O(c^n), where c is a constant", correct: false },
+                    { text: "O(n!)", correct: false }
+                ],
+                tags: ['algorithms', 'complexity', 'big_o', 'exam1']
+            },
+            {
+                id: 'ex1_4a_pdp_input_mcq', tier: 2, source: 'Exam 1, Q4a',
+                questionText: "The primary input to the Partial Digest Problem (PDP) is:",
+                options: [
+                    { text: "A complete genomic sequence and a list of restriction enzymes.", correct: false },
+                    { text: "A set of known restriction site positions.", correct: false },
+                    { text: "A multiset of fragment lengths obtained from a partial digest.", correct: true },
+                    { text: "A protein sequence to be mapped to the genome.", correct: false }
+                ],
+                tags: ['algorithms', 'pdp', 'exam1']
+            },
+            {
+                id: 'ex2_1b_motif_space_mcq', tier: 2, source: 'Exam 2, Q1b',
+                questionText: "If you have 'p' DNA sequences, each of length 'k', and you are looking for L-mers of length 'L', the total search space for motif combinations is:",
+                options: [
+                    { text: "p * (k - L + 1)", correct: false },
+                    { text: "(k - L + 1)^p", correct: true },
+                    { text: "k^p * L", correct: false },
+                    { text: "p * k * L", correct: false }
+                ],
+                tags: ['motif_finding', 'complexity', 'exam2']
+            },
+            {
+                id: 'ex2_4a_nw_recurrence_part_mcq', tier: 2, source: 'Exam 2, Q4a',
+                questionText: "In the Needleman-Wunsch recurrence V(i,j) = max{...}, what does V(i-1, j-1) + s(S1[i], S2[j]) represent?",
+                options: [
+                    { text: "Aligning S1[i] with a gap.", correct: false },
+                    { text: "Aligning S2[j] with a gap.", correct: false },
+                    { text: "Aligning S1[i] with S2[j] (match or mismatch).", correct: true },
+                    { text: "Starting a new alignment.", correct: false }
+                ],
+                tags: ['sequence_alignment', 'global_alignment', 'needleman_wunsch', 'exam2']
+            },
+            {
+                id: 'ex2_5a_affine_components_mcq', tier: 2, source: 'Exam 2, Q5a',
+                questionText: "An affine gap penalty model includes a penalty for opening a gap and a penalty for:",
+                options:  [
+                    { text: "Each mismatch within the gap.", correct: false },
+                    { text: "The length of the sequences being aligned.", correct: false },
+                    { text: "Each extension of the gap by one character.", correct: true },
+                    { text: "The number of gaps in the entire alignment.", correct: false }
+                ],
+                tags: ['sequence_alignment', 'gap_penalty', 'exam2']
+            },
+             {
+                id: 'fr_exon_chaining_goal_mcq', tier: 2, source: 'Final Review - Gene Prediction',
+                questionText: "The primary goal of the Exon Chaining Problem is to:",
+                options: [
+                    { text: "Find all possible exons in a genome.", correct: false },
+                    { text: "Select a non-overlapping, ordered subset of putative exons that maximizes a total score.", correct: true },
+                    { text: "Determine the exact DNA sequence of introns.", correct: false },
+                    { text: "Calculate the E-value for each putative exon.", correct: false }
+                ],
+                tags: ['gene_prediction', 'exon_chaining', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_rpkm_formula_numerator_mcq', tier: 2, source: 'Final Review - RNA-seq',
+                questionText: "In the RPKM formula, the numerator is typically:",
+                options: [
+                    { text: "Gene length in base pairs multiplied by 10^6.", correct: false },
+                    { text: "Total number of mapped reads in the sample.", correct: false },
+                    { text: "Number of reads mapped to a specific gene, often scaled (e.g., multiplied by 10^9).", correct: true },
+                    { text: "The average read length for the experiment.", correct: false }
+                ],
+                tags: ['rna_seq', 'normalization', 'rpkm', 'final_review']
+            },
+             {
+                id: 'ex1_3c_selection_sort_comp_mcq', tier: 2, source: 'Exam 1, Q3c',
+                questionText: "The time complexity of selection sort (recursive or iterative) is generally:",
+                options: [
+                    { text: "O(n log n)", correct: false },
+                    { text: "O(n^2)", correct: true },
+                    { text: "O(n)", correct: false },
+                    { text: "O(1)", correct: false }
+                ],
+                tags: ['algorithms', 'sorting', 'complexity', 'exam1']
+            },
+
+
+            // Tier 3: Complex Exam Problems / Specific Calculations - Multiple Choice
+            {
+                id: 'ex1_1c_translation_mcq', tier: 3, source: 'Exam 1, Q1c',
+                questionText: "Using a standard genetic code (TAA=STOP), what is the protein sequence for the CDS: ATCTCGCTAATTTAA?",
+                options: [
+                    { text: "ISLA-STOP", correct: false },
+                    { text: "ISLI-STOP", correct: true }, // ATC=I, TCG=S, CTA=L, ATT=I, TAA=STOP
+                    { text: "ALRK-STOP", correct: false },
+                    { text: "ISTLII-STOP", correct: false }
+                ],
+                note: "Amino acids: I=ATC, S=TCG, L=CTA, I=ATT. STOP=TAA.",
+                tags: ['biology_primer', 'translation', 'exam1']
+            },
+            {
+                id: 'ex1_2_gene1_seq_mcq', tier: 3, source: 'Exam 1, Q2',
+                questionText: "According to Exam 1, Q2, what was the nucleotide sequence given for 'gene1' (chr-xx, 5, 12, ..., strand '-')?",
+                options: [
+                    { text: "AATCTAG", correct: false },
+                    { text: "GGATCTAA", correct: true },
+                    { text: "CTACAGG", correct: false },
+                    { text: "TTAGATC", correct: false }
+                ],
+                note: "This question tests recall of the specific exam answer.",
+                tags: ['sequence_extraction', 'exam1']
+            },
+            {
+                id: 'ex1_4b_pdp_brute_force_key_mcq', tier: 3, source: 'Exam 1, Q4b',
+                questionText: "In the brute-force PDP algorithm outlined in Exam 1, after selecting (n-2) internal sites, what is the critical step?",
+                options: [
+                    { text: "Calculate the E-value of the fragment set.", correct: false },
+                    { text: "Perform a local alignment of the fragments.", correct: false },
+                    { text: "Form ΔX (all pairwise distances from chosen sites) and compare it to the input L.", correct: true },
+                    { text: "Sort the fragments by size and pick the median.", correct: false }
+                ],
+                tags: ['algorithms', 'pdp', 'exam1']
+            },
+            {
+                id: 'ex1_5a_pdp_practical_choice_mcq', tier: 3, source: 'Exam 1, Q5a',
+                questionText: "In the practical PDP algorithm (Exam 1, Q5), if M is the total length and 'y' is the largest remaining fragment in L, a common choice for the next hypothetical cut site $x_i$ is:",
+                options: [
+                    { text: "y / 2", correct: false },
+                    { text: "M / y", correct: false },
+                    { text: "M - y (or y itself)", correct: true },
+                    { text: "The smallest fragment in L.", correct: false }
+                ],
+                tags: ['algorithms', 'pdp', 'exam1']
+            },
+            {
+                id: 'ex2_1c_motif_score_recall_mcq', tier: 3, source: 'Exam 2, Q1c',
+                questionText: "In Exam 2, Q1c, for the motif finding problem with S=(4,5,6,7) and L=5, what was the reported consensus SCORE?",
+                options: [
+                    { text: "10", correct: false },
+                    { text: "11", correct: false },
+                    { text: "12", correct: true },
+                    { text: "15", correct: false }
+                ],
+                note: "This tests recall of the specific exam answer.",
+                tags: ['motif_finding', 'consensus_score', 'exam2']
+            },
+            {
+                id: 'ex2_2c_median_string_loop_mcq', tier: 3, source: 'Exam 2, Q2c',
+                questionText: "The brute-force median string search algorithm (Exam 2) iterates through:",
+                options: [
+                    { text: "All L-mers present in the input DNA sequences only.", correct: false },
+                    { text: "All possible 4^L L-mers.", correct: true },
+                    { text: "All pairs of input DNA sequences.", correct: false },
+                    { text: "Only L-mers that match a predefined profile.", correct: false }
+                ],
+                tags: ['motif_finding', 'median_string', 'algorithms', 'exam2']
+            },
+            {
+                id: 'ex2_5b_score_recall_mcq', tier: 3, source: 'Exam 2, Q5b',
+                questionText: "According to the student's answer in Exam 2, Q5b, for the given BLASTn alignment, what was the calculated alignment SCORE?",
+                options: [
+                    { text: "23", correct: false },
+                    { text: "5", correct: false }, // This was my re-calculation
+                    { text: "4", correct: true },  // Student's answer
+                    { text: "70", correct: false }
+                ],
+                note: "This tests recall of the student's answer on the exam paper.",
+                tags: ['sequence_alignment', 'blast', 'exam2']
+            },
+            {
+                id: 'ex2_6_sw_score_recall_mcq', tier: 3, source: 'Exam 2, Q6',
+                questionText: "In Exam 2, Q6, for the Smith-Waterman local alignment of S=ACAA and T=CTCAT (match=+2, mis/indel=-1), what was the reported SCORE of the best local alignment?",
+                options: [
+                    { text: "2", correct: false },
+                    { text: "3", correct: false },
+                    { text: "4", correct: true },
+                    { text: "5", correct: false }
+                ],
+                note: "This tests recall of the specific exam answer.",
+                tags: ['sequence_alignment', 'smith_waterman', 'exam2']
+            },
+            {
+                id: 'fr_spliced_dp_s_representation_mcq', tier: 3, source: 'Final Review - Spliced Alignment',
+                questionText: "In the 3D DP for Spliced Alignment, S(i, j, B), what does 'B' typically represent?",
+                options: [
+                    { text: "The BLAST score threshold.", correct: false },
+                    { text: "A specific candidate exon (block) from the genomic sequence.", correct: true },
+                    { text: "The background nucleotide frequency.", correct: false },
+                    { text: "A Boolean flag for intron presence.", correct: false }
+                ],
+                tags: ['gene_prediction', 'spliced_alignment', 'dynamic_programming', 'final_review']
+            },
+            {
+                id: 'fr_rnaseq_dz_calc_a_mcq', tier: 3, source: 'Final Review - RNA-seq Dead Zones',
+                questionText: "In the Final Review example for dead zones, if a duplicated region X has length |X| and read length is l_read, 'a' (number of unique read start positions in one copy) is calculated as:",
+                options: [
+                    { text: "|X| / l_read", correct: false },
+                    { text: "|X| - l_read", correct: false },
+                    { text: "|X| - l_read + 1", correct: true },
+                    { text: "l_read - 1", correct: false }
+                ],
+                tags: ['rna_seq', 'dead_zones', 'mappability', 'final_review']
+            }
+            // Add more MCQs here, aiming for "a lot" by breaking down topics further from exams and review.
+        ];
+
+        let currentQuestionPools = [[], [], []]; 
+        let priorityReviewQueue = [];
+        let currentQuestion = null;
+        let currentTier = 0; 
+        
+        let questionsAnsweredInTierDisplay = 0; // For display in current tier round
+        let questionsInCurrentTierDisplay = 0; // For display
+
+        let overallCorrectAnswers = 0;
+        let overallReviewedQuestions = 0;
+        let allQuestionsOriginalCount = questions.length;
+
+
+        const questionSourceEl = document.getElementById('questionSource');
+        const questionTextEl = document.getElementById('questionText');
+        const noteAreaEl = document.getElementById('noteArea');
+        const optionsAreaEl = document.getElementById('optionsArea');
+        const feedbackAreaEl = document.getElementById('feedbackArea');
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const skipToQuestionSelectEl = document.getElementById('skipToQuestionSelect');
+
+        const questionProgressEl = document.getElementById('questionProgress');
+        const priorityQueueSizeEl = document.getElementById('priorityQueueSize');
+        const overallScoreEl = document.getElementById('overallScore');
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function populateSkipToQuestionSelect() {
+            allQuestionsOriginalCount = questions.length; // Store original count before any modification
+            questions.forEach((q, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                // Use original index for display
+                option.textContent = `Q${index + 1} (T${q.tier}): ${q.questionText.substring(0, 35)}...`;
+                skipToQuestionSelectEl.appendChild(option);
+            });
+            skipToQuestionSelectEl.addEventListener('change', (event) => {
+                const originalQuestionIndex = parseInt(event.target.value);
+                jumpToQuestion(originalQuestionIndex);
+            });
+        }
+        
+        function jumpToQuestion(originalIndex) {
+            if (originalIndex >= 0 && originalIndex < questions.length) {
+                currentQuestion = questions[originalIndex]; 
+                displaySingleQuestion(currentQuestion, originalIndex); // Pass original index for context
+            }
+        }
+
+        function displaySingleQuestion(q, originalIdxForDisplay = -1) {
+            currentQuestion = q; 
+            feedbackAreaEl.classList.add('hidden');
+            nextQuestionBtn.classList.add('hidden');
+            optionsAreaEl.innerHTML = ''; // Clear previous options
+
+            questionSourceEl.textContent = `Source: ${currentQuestion.source} (Tier ${currentQuestion.tier})`;
+            questionTextEl.textContent = currentQuestion.questionText;
+            noteAreaEl.innerHTML = currentQuestion.note ? `<em>Note: ${currentQuestion.note}</em>` : "";
+
+            // Shuffle options for display
+            const displayOptions = [...currentQuestion.options];
+            shuffleArray(displayOptions);
+
+            displayOptions.forEach(opt => {
+                const button = document.createElement('button');
+                button.classList.add('option-button');
+                button.innerHTML = opt.text; // Use innerHTML to render potential formatting
+                button.addEventListener('click', () => handleOptionClick(opt, button, displayOptions));
+                optionsAreaEl.appendChild(button);
+            });
+            optionsAreaEl.classList.remove('hidden');
+
+            if (originalIdxForDisplay !== -1) {
+                 questionProgressEl.textContent = `Viewing Q${originalIdxForDisplay + 1} (Tier ${currentQuestion.tier})`;
+            }
+            // Do not update regular stats for jumps, or handle carefully
+        }
+
+
+        function loadQuestionPools() {
+            currentQuestionPools = [[], [], []];
+            questions.forEach(q => {
+                if (q.tier >= 1 && q.tier <= 3) {
+                    currentQuestionPools[q.tier - 1].push({...q, originalIndex: questions.indexOf(q) }); // Store original index
+                }
+            });
+            currentQuestionPools.forEach(pool => shuffleArray(pool));
+            
+            priorityReviewQueue = [];
+            // No need to reset 'incorrectlyAnswered' on question objects if we manage it in queue
+            currentTier = 0; 
+            questionsAnsweredInTierDisplay = 0;
+            questionsInCurrentTierDisplay = currentQuestionPools[currentTier] ? currentQuestionPools[currentTier].length : 0;
+            
+            overallCorrectAnswers = 0;
+            overallReviewedQuestions = 0;
+            updateStats();
+        }
+
+        function displayQuestion() {
+            feedbackAreaEl.classList.add('hidden');
+            nextQuestionBtn.classList.add('hidden');
+            optionsAreaEl.innerHTML = ''; // Clear previous options
+
+            let isFromPriority = false;
+
+            if (priorityReviewQueue.length > 0 && (Math.random() < 0.6 || currentQuestionPools[currentTier].length === 0 && currentTier >= currentQuestionPools.length -1 )) {
+                currentQuestion = priorityReviewQueue.shift();
+                isFromPriority = true;
+            } else {
+                if (!currentQuestionPools[currentTier] || currentQuestionPools[currentTier].length === 0) {
+                    currentTier++;
+                    questionsAnsweredInTierDisplay = 0; 
+                    if (currentTier < currentQuestionPools.length) {
+                        questionsInCurrentTierDisplay = currentQuestionPools[currentTier].length;
+                    } else {
+                        // All tiers exhausted, only pull from priority if available
+                        if (priorityReviewQueue.length > 0) {
+                            currentQuestion = priorityReviewQueue.shift();
+                            isFromPriority = true;
+                        } else {
+                            questionTextEl.textContent = "Congratulations! You've reviewed all available questions.";
+                            optionsAreaEl.classList.add('hidden');
+                            updateStats(); 
+                            return;
+                        }
+                    }
+                }
+                // This check is to ensure we don't try to shift from an empty or non-existent tier pool
+                if (!isFromPriority && currentQuestionPools[currentTier] && currentQuestionPools[currentTier].length > 0) {
+                    currentQuestion = currentQuestionPools[currentTier].shift();
+                    questionsAnsweredInTierDisplay++;
+                } else if (!isFromPriority && priorityReviewQueue.length > 0) { 
+                    // Fallback if tier progression logic hits an edge case but priority still has items
+                    currentQuestion = priorityReviewQueue.shift();
+                    isFromPriority = true;
+                } else if (!isFromPriority) {
+                     questionTextEl.textContent = "Congratulations! You've reviewed all available questions in tiers.";
+                     optionsAreaEl.classList.add('hidden');
+                     updateStats(); 
+                     return;
+                }
+            }
+            
+            if (!currentQuestion) { // Should not happen if logic above is correct
+                 questionTextEl.textContent = "No more questions. Great job!";
+                 optionsAreaEl.classList.add('hidden');
+                 updateStats();
+                 return;
+            }
+            
+            skipToQuestionSelectEl.value = currentQuestion.originalIndex;
+
+
+            questionSourceEl.textContent = `Source: ${currentQuestion.source} (Tier ${currentQuestion.tier}${isFromPriority ? ' - Retry!' : ''})`;
+            questionTextEl.textContent = currentQuestion.questionText;
+            noteAreaEl.innerHTML = currentQuestion.note ? `<em>Note: ${currentQuestion.note}</em>` : "";
+
+            const displayOptions = [...currentQuestion.options];
+            shuffleArray(displayOptions);
+
+            displayOptions.forEach(opt => {
+                const button = document.createElement('button');
+                button.classList.add('option-button');
+                button.innerHTML = opt.text;
+                button.addEventListener('click', () => handleOptionClick(opt, button, displayOptions));
+                optionsAreaEl.appendChild(button);
+            });
+            optionsAreaEl.classList.remove('hidden');
+            updateStats();
+        }
+        
+        function handleOptionClick(selectedOption, clickedButton, allOptionButtons) {
+            optionsAreaEl.querySelectorAll('.option-button').forEach(btn => {
+                btn.disabled = true; // Disable all option buttons after a choice
+                // Find the original option object for this button to check correctness
+                const originalOpt = currentQuestion.options.find(o => o.text === btn.innerHTML); // Using innerHTML, be careful with complex HTML in text
+                if (originalOpt) {
+                    if (originalOpt.correct) {
+                        btn.classList.add('correct');
+                    } else if (btn === clickedButton) { // If this is the incorrect one the user clicked
+                         btn.classList.add('selected-incorrect');
+                    }
+                }
+            });
+
+            feedbackAreaEl.classList.remove('hidden');
+            overallReviewedQuestions++;
+
+            if (selectedOption.correct) {
+                feedbackAreaEl.innerHTML = "<span class='feedback-correct-text'>Correct!</span>";
+                overallCorrectAnswers++;
+                // If it was in priority, its successful answer means it might not need to be re-added immediately
+                // The logic of shifting it from priority queue handles its removal for now.
+            } else {
+                feedbackAreaEl.innerHTML = "<span class='feedback-incorrect-text'>Incorrect.</span> The correct answer is highlighted.";
+                // Add/Re-add to priority queue if incorrect
+                const alreadyInPriority = priorityReviewQueue.find(q => q.id === currentQuestion.id);
+                if (!alreadyInPriority) {
+                    priorityReviewQueue.push(currentQuestion);
+                    shuffleArray(priorityReviewQueue);
+                }
+            }
+            nextQuestionBtn.classList.remove('hidden');
+            updateStats();
+        }
+
+
+        nextQuestionBtn.addEventListener('click', () => {
+            displayQuestion();
+        });
+
+        function updateStats() {
+            let currentPoolTotal = 0;
+            if (currentQuestionPools[currentTier]) {
+                 currentPoolTotal = currentQuestionPools[currentTier].length + questionsAnsweredInTierDisplay;
+            } else if (currentTier >= currentQuestionPools.length) { // all tiers done
+                currentPoolTotal = questionsAnsweredInTierDisplay; // should be total of last tier
+            }
+
+            questionProgressEl.textContent = `${questionsAnsweredInTierDisplay} / ${questionsInCurrentTierDisplay} (Tier ${currentTier + 1})`;
+            if (currentTier >= currentQuestionPools.length && priorityReviewQueue.length === 0) {
+                 questionProgressEl.textContent = `All Tiers Completed!`;
+            }
+
+            priorityQueueSizeEl.textContent = priorityReviewQueue.length;
+            overallScoreEl.textContent = `${overallCorrectAnswers} / ${overallReviewedQuestions}`;
+        }
+
+        // Initialize
+        populateSkipToQuestionSelect();
+        loadQuestionPools();
+        displayQuestion(); 
+    </script>
+</body>
+</html>
