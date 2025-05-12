@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bio/Algo Flashcards</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+  <div class="w-full max-w-xl">
+    <!-- Flashcard -->
+    <div id="card" class="rounded-2xl shadow-xl p-8 bg-gray-800 text-center text-xl cursor-pointer select-none transition-transform">
+      <!-- Content is injected by JavaScript -->
+    </div>
+
+    <!-- Controls -->
+    <div class="flex justify-between mt-6">
+      <button id="prev" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600">Prev</button>
+      <button id="flip" class="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-500">Flip</button>
+      <button id="next" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600">Next</button>
+    </div>
+
+    <!-- Progress & Shuffle -->
+    <div class="flex justify-between mt-4 text-sm text-gray-400">
+      <span id="progress">1 / 1</span>
+      <button id="shuffle" class="underline">Shuffle</button>
+    </div>
+  </div>
+
+  <script>
+    // --- Flashcards data ---
+    const flashcards = [
+      { q: 'Explain briefly “splicing” in gene expression.', a: 'Splicing removes introns from pre‑mRNA and ligates exons, forming mature mRNA ready for export and translation.' },
+      { q: 'List the parts of a eukaryotic mRNA molecule (5′→3′).', a: '7‑methyl‑G cap → 5′ UTR → Start codon (AUG) → Coding sequence (CDS) → Stop codon (UAA/UAG/UGA) → 3′ UTR → Poly(A) tail' },
+      { q: 'How does the genetic code translate nucleotides to protein?', a: 'Read mRNA in non‑overlapping triplets (codons); each codon specifies one amino acid according to the universal code, from AUG (start/Met) until a stop codon.' },
+      { q: 'What is the role of tRNA (transfer RNA)?', a: 'Each tRNA matches its anticodon to an mRNA codon and delivers the corresponding amino acid to the ribosome, extending the polypeptide chain.' },
+      { q: 'Define a greedy algorithm.', a: 'Constructs a solution step‑by‑step, always choosing the locally optimal option in hopes of reaching a global optimum.' },
+      { q: 'Define a branch‑and‑bound algorithm.', a: 'Explores the search tree while pruning branches that cannot out‑score the best solution found, using upper/lower bounds.' },
+      { q: 'Define dynamic programming.', a: 'Solves overlapping sub‑problems once, stores their results, and combines them to build an optimal global solution.' },
+      { q: 'What is a polynomial‑time algorithm?', a: 'Its worst‑case running time is O(n^k) for some constant k independent of n.' },
+      { q: 'Give the time‑complexity of recursive selection sort.', a: 'T(n) = T(n‑1) + O(n) ⇒ T(n) = O(n²).' },
+      { q: 'Input and output of the partial‑digest problem (PDP).', a: 'Input: multiset L of all pairwise distances (includes 0 and M). Output: positions X = {x₁…xₙ} with 0 ≤ x₁ < … < xₙ = M whose pairwise differences equal L.' },
+      { q: 'Sketch a brute‑force algorithm for PDP.', a: 'Let M = max(L). For every subset S of L with n‑2 elements, set X = {0, M} ∪ S; if pairwise differences of X equal L, return X.' },
+      { q: 'Time‑complexity of brute‑force PDP.', a: 'Enumerate C(|L|, n‑2) ≈ O(n!) candidate sets and check O(n²) distances ⇒ O(n!).' },
+      { q: 'Improved brute‑force PDP complexity.', a: 'Place the largest distance at 0 or M and recurse; worst‑case complexity O(2^n).' },
+      { q: 'Practical PDP: choosing a hypothetical site xᵢ.', a: 'Pick the largest remaining distance d in L and place a site at d or at M‑d.' },
+      { q: 'Practical PDP: how to test a hypothetical xᵢ.', a: 'Remove from L all distances between xᵢ and already‑chosen sites; if any required distance is missing, backtrack.' },
+      { q: 'Practical PDP expected complexity.', a: 'Expected O(n²) due to heavy pruning; worst‑case O(2^n).' },
+      { q: 'Define the (ℓ,d) motif‑finding problem.', a: 'Find an ℓ‑mer appearing in each of p DNA sequences with ≤ d mismatches that maximises a chosen score.' },
+      { q: 'Search space size for motif positions (p sequences, length k, motif ℓ).', a: '(k − ℓ + 1)^p position combinations.' },
+      { q: 'Objective of the median‑string problem.', a: 'Find string s* that minimises Σ₁ᵖ Hamming(s*, tᵢ) where each tᵢ is an ℓ‑mer in sequence i.' },
+      { q: 'Relation between motif‑finding and median‑string.', a: 'A median string is a valid motif when its total distance ≤ p·d.' },
+      { q: 'Brute‑force median‑string search outline.', a: 'Enumerate all 4^ℓ ℓ‑mers; compute total distance to sequences; keep the word with minimal total.' },
+      { q: 'Branch‑and‑bound median search: non‑leaf node steps.', a: 'Extend prefix (next_Vertex); compute lower bound (Total_distance); if bound ≥ best, bypass subtree; else recurse.' },
+      { q: 'Greedy motif‑finding time‑complexity.', a: 'O(p·k·ℓ): scan p sequences once per column, ℓ columns.' },
+      { q: 'Needleman–Wunsch recurrence.', a: 'V(i,j) = max{ V(i‑1,j‑1) + s(xᵢ,yⱼ), V(i‑1,j) + gap, V(i,j‑1) + gap }.' },
+      { q: 'Using global alignment to compute LCS.', a: 'Set scores: match = 1, mismatch = 0, gap = 0; optimal alignment score equals LCS length.' },
+      { q: 'Affine gap‑penalty formula vs linear.', a: 'Affine: gap(k) = g + e·(k‑1) (open g, extend e). Linear is special case e = 0.' },
+      { q: 'Best local alignment and score for S = ACAA, T = CTCAT (match 2, mismatch/gap ‑1).', a: 'Alignment "CA" with "CA"; score = 4.' }
+    ];
+
+    // --- State ---
+    let idx = 0;
+    let showingAnswer = false;
+
+    // --- Elements ---
+    const card = document.getElementById('card');
+    const progress = document.getElementById('progress');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const flipBtn = document.getElementById('flip');
+    const shuffleBtn = document.getElementById('shuffle');
+
+    // --- Functions ---
+    function render() {
+      progress.textContent = `${idx + 1} / ${flashcards.length}`;
+      const text = showingAnswer ? flashcards[idx].a : flashcards[idx].q;
+      card.innerHTML = text;
+    }
+
+    function flip() {
+      showingAnswer = !showingAnswer;
+      render();
+    }
+
+    function next() {
+      if (idx < flashcards.length - 1) {
+        idx++;
+        showingAnswer = false;
+        render();
+      }
+    }
+
+    function prev() {
+      if (idx > 0) {
+        idx--;
+        showingAnswer = false;
+        render();
+      }
+    }
+
+    function shuffle() {
+      for (let i = flashcards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [flashcards[i], flashcards[j]] = [flashcards[j], flashcards[i]];
+      }
+      idx = 0;
+      showingAnswer = false;
+      render();
+    }
+
+    // --- Event listeners ---
+    card.addEventListener('click', flip);
+    flipBtn.addEventListener('click', flip);
+    nextBtn.addEventListener('click', next);
+    prevBtn.addEventListener('click', prev);
+    shuffleBtn.addEventListener('click', shuffle);
+
+    // --- Initial render ---
+    render();
+  </script>
+</body>
+</html>
