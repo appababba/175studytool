@@ -10,7 +10,7 @@
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
   <div class="w-full max-w-xl">
     <!-- Flashcard -->
-    <div id="card" class="rounded-2xl shadow-xl p-8 bg-gray-800 text-center text-xl cursor-pointer select-none transition-transform">
+    <div id="card" class="rounded-2xl shadow-xl p-8 bg-gray-800 text-center text-xl cursor-pointer select-none transition-transform min-h-[160px] flex items-center justify-center">
       <!-- Content is injected by JavaScript -->
     </div>
 
@@ -29,35 +29,44 @@
   </div>
 
   <script>
-    // --- Flashcards data ---
+    // --- Flashcards data (exact copies of your answers) ---
     const flashcards = [
-      { q: 'Explain briefly “splicing” in gene expression.', a: 'Splicing removes introns from pre‑mRNA and ligates exons, forming mature mRNA ready for export and translation.' },
-      { q: 'Show the structure of mRNA. Please specify each field with name. ', a: '7‑methyl‑G cap → 5′ UTR → Start codon (AUG) → Coding sequence (CDS) → Stop codon (UAA/UAG/UGA) → 3′ UTR → Poly(A) tail' },
-      { q: 'How does the genetic code translate nucleotides to protein?', a: 'Read mRNA in non‑overlapping triplets (codons); each codon specifies one amino acid according to the universal code, from AUG (start/Met) until a stop codon.' },
-      { q: 'What is the role of tRNA (transfer RNA)?', a: 'TRNA takes amino acids for codons to the ribosome' },
-      { q: 'Define a greedy algorithm.', a: 'Constructs a solution step‑by‑step, always choosing the locally optimal option in hopes of reaching a global optimum.' },
-      { q: 'Define a branch‑and‑bound algorithm.', a: 'Explores the search tree while pruning branches that cannot out‑score the best solution found, using upper/lower bounds.' },
-      { q: 'Define dynamic programming.', a: 'Solves overlapping sub‑problems once, stores their results, and combines them to build an optimal global solution.' },
-      { q: 'What is a polynomial‑time algorithm?', a: 'Its worst‑case running time is O(n^k) for some constant k independent of n.' },
-      { q: 'Give the time‑complexity of recursive selection sort.', a: 'T(n) = T(n‑1) + O(n) ⇒ T(n) = O(n²).' },
-      { q: 'Input and output of the partial‑digest problem (PDP).', a: 'Input: multiset L of all pairwise distances (includes 0 and M). Output: positions X = {x₁…xₙ} with 0 ≤ x₁ < … < xₙ = M whose pairwise differences equal L.' },
-      { q: 'Sketch a brute‑force algorithm for PDP.', a: 'Let M = max(L). For every subset S of L with n‑2 elements, set X = {0, M} ∪ S; if pairwise differences of X equal L, return X.' },
-      { q: 'Time‑complexity of brute‑force PDP.', a: 'Enumerate C(|L|, n‑2) ≈ O(n!) candidate sets and check O(n²) distances ⇒ O(n!).' },
-      { q: 'Improved brute‑force PDP complexity.', a: 'Place the largest distance at 0 or M and recurse; worst‑case complexity O(2^n).' },
-      { q: 'Practical PDP: choosing a hypothetical site xᵢ.', a: 'Pick the largest remaining distance d in L and place a site at d or at M‑d.' },
-      { q: 'Practical PDP: how to test a hypothetical xᵢ.', a: 'Remove from L all distances between xᵢ and already‑chosen sites; if any required distance is missing, backtrack.' },
-      { q: 'Practical PDP expected complexity.', a: 'Expected O(n²) due to heavy pruning; worst‑case O(2^n).' },
-      { q: 'Define the (ℓ,d) motif‑finding problem.', a: 'Find an ℓ‑mer appearing in each of p DNA sequences with ≤ d mismatches that maximises a chosen score.' },
-      { q: 'Search space size for motif positions (p sequences, length k, motif ℓ).', a: '(k − ℓ + 1)^p position combinations.' },
-      { q: 'Objective of the median‑string problem.', a: 'Find string s* that minimises Σ₁ᵖ Hamming(s*, tᵢ) where each tᵢ is an ℓ‑mer in sequence i.' },
-      { q: 'Relation between motif‑finding and median‑string.', a: 'A median string is a valid motif when its total distance ≤ p·d.' },
-      { q: 'Brute‑force median‑string search outline.', a: 'Enumerate all 4^ℓ ℓ‑mers; compute total distance to sequences; keep the word with minimal total.' },
-      { q: 'Branch‑and‑bound median search: non‑leaf node steps.', a: 'Extend prefix (next_Vertex); compute lower bound (Total_distance); if bound ≥ best, bypass subtree; else recurse.' },
-      { q: 'Greedy motif‑finding time‑complexity.', a: 'O(p·k·ℓ): scan p sequences once per column, ℓ columns.' },
-      { q: 'Needleman–Wunsch recurrence.', a: 'V(i,j) = max{ V(i‑1,j‑1) + s(xᵢ,yⱼ), V(i‑1,j) + gap, V(i,j‑1) + gap }.' },
-      { q: 'Using global alignment to compute LCS.', a: 'Set scores: match = 1, mismatch = 0, gap = 0; optimal alignment score equals LCS length.' },
-      { q: 'Affine gap‑penalty formula vs linear.', a: 'Affine: gap(k) = g + e·(k‑1) (open g, extend e). Linear is special case e = 0.' },
-      { q: 'Best local alignment and score for S = ACAA, T = CTCAT (match 2, mismatch/gap ‑1).', a: 'Alignment "CA" with "CA"; score = 4.' }
+      { q: 'Explain briefly “splicing” in the gene expression.', a: `Splicing is when introns are removed from the pre‑mRNA and the coding regions called exons are joined together.` },
+      { q: 'Show the structure of mRNA. Please specify each field with name.', a: `7‑methyl‑G cap → 5′ UTR → Start codon (AUG) → Coding sequence (CDS) → Stop codon (UAA/UAG/UGA) → 3′ UTR → Poly(A) tail` },
+      { q: 'Genetic code / write corresponding protein sequence.', a: `Read mRNA in non‑overlapping triplets (codons) and translate each into its amino‑acid to obtain the protein sequence.` },
+      { q: 'What is the role of tRNA (transfer RNA), which is a non‑coding RNA?', a: `tRNA helps build proteins by bringing the right amino acids to the ribosome during translation. Each tRNA matches an mRNA codon with its anticodon and carries the right amino acid to add to the growing protein chain.` },
+
+      { q: 'Greedy algorithm (explain briefly).', a: `Builds solution step‑by‑step, always picks the locally optimal choice, hoping for global optimum.` },
+      { q: 'Branch and bound algorithm (explain briefly).', a: `Systematically explores a solution tree; uses bounds to prune branches that cannot beat the best solution so far.` },
+      { q: 'Dynamic programming algorithm (explain briefly).', a: `Solves overlapping sub‑problems once, stores their values, and combines them to build the optimal global answer.` },
+      { q: 'What is called “polynomial time algorithm”? (Big‑O definition)', a: `Its worst‑case running time is O(nᵏ) for some constant k (k independent of n).` },
+      { q: 'Show the time complexity of the recursive selection sort and justify.', a: `T(n)=T(n‑1)+O(n) ⇒ T(n)=O(n²); each pass places one smallest element and recurses on n‑1 items.` },
+
+      { q: 'Define the restriction site mapping problem (PDP) in terms of input and output.', a: `Definition: Input: multiset L of all pairwise distances between n restriction sites (and 0, M = maximum). Output: a set X of n site positions on the line (0 ≤ x₁ < … < xₙ = M) whose pairwise differences equal L.` },
+      { q: 'Write the brute‑force algorithm for the PDP.', a: `M ← max(L); for every subset S of L with (n‑2) elements: X ← {0, M} ∪ S; if pairwise distances of X equal L, return X.` },
+      { q: 'Time complexity of the brute‑force PDP algorithm (justify).', a: `Enumerates C(|L|, n‑2) ≈ O(n!) candidate sets and checks O(n²) distances ⇒ O(n!).` },
+      { q: 'Describe the idea of the improved brute‑force PDP algorithm and its time complexity.', a: `Place the largest distance at 0 or M and recurse on the reduced multiset (symmetry). Worst‑case time ≈ O(2ⁿ).` },
+
+      { q: 'Practical PDP: how to set the hypothetical xᵢ.', a: `Choose the largest remaining distance d in L and tentatively place a site at x = d or at x = M − d (two symmetric choices).` },
+      { q: 'Practical PDP: how to check whether the hypothetical xᵢ is satisfactory.', a: `Subtract from L all distances between x and already‑chosen sites; if any required distance is missing, reject that placement and backtrack.` },
+      { q: 'Time complexity of recursive practical PDP algorithm.', a: `Recursive implementation complexity: In practice O(n²) expected because pruning is heavy; worst‑case recurrence still 2‑branch, so O(2ⁿ).` },
+
+      { q: 'Define the (L,d) motif finding problem.', a: `Find an L‑mer (length‑L pattern) appearing in each of p DNA sequences with ≤ d mismatches (Hamming), maximising some score.` },
+      { q: 'Total search space for motif positions (p sequences length k, motif length L).', a: `Total search space: (k − L + 1)ᵖ possible motif position combinations.` },
+
+      { q: 'Write the median‑string objective formula.', a: `Find string s* that minimises Σ₁ᵖ Hamming(s*, tᵢ) over all length‑L substrings tᵢ in each sequence.` },
+      { q: 'Relationship between motif finding and median string finding problems.', a: `Motif‑finding ≈ median‑string when the optimal median’s total distance ≤ p·d.` },
+      { q: 'Brute‑force median string search algorithm.', a: `best_word ← “A…A”; best_dist ← ∞; for every L‑mer w in 4ᴸ: dist ← Σ₁ᵖ min_{sub in seqᵢ} Hamming(w, sub); if dist < best_dist: (best_word, best_dist) ← (w, dist); return best_word.` },
+
+      { q: 'Branch‑and‑bound median finding: operations at a non‑leaf node.', a: `At a non‑leaf L‑mer‑tree node: call next_Vertex() to extend the partial prefix; compute lower bound with Total_distance(Prefix); if bound ≥ current best, Bypass() the subtree; else continue down.` },
+      { q: 'Time complexity of the greedy motif finding approach (justify).', a: `Greedy motif algorithm scans each sequence once per column ⇒ O(p·k) per column, times L columns ⇒ O(p·k·L).` },
+
+      { q: 'Needleman–Wunsch recurrence relation.', a: `V(i,j) = max{ V(i‑1,j‑1) + s(xᵢ, yⱼ), V(i‑1,j) + gap, V(i,j‑1) + gap }` },
+      { q: 'Describe the LCS problem via global alignment.', a: `Set match = 1, mismatch = 0, gap = 0; maximising the alignment score under that scheme yields the length of the longest common subsequence.` },
+
+      { q: 'Affine gap penalty model formula and linear gap relation.', a: `Affine: gap(k) = g + e·(k‑1) where g = gap‑open, e = gap‑extend. Linear gap penalty is the affine model with e = 0.` },
+
+      { q: 'Best local alignment for S = ACAA and T = CTCAT (match 2, mis/ins/del -1).', a: `Alignment “CA” with “CA”; score = 4.` }
     ];
 
     // --- State ---
