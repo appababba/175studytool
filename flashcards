@@ -32,9 +32,9 @@
     // --- Flashcards data ---
     const flashcards = [
       { q: 'Explain briefly “splicing” in gene expression.', a: 'Splicing removes introns from pre‑mRNA and ligates exons, forming mature mRNA ready for export and translation.' },
-      { q: 'List the parts of a eukaryotic mRNA molecule (5′→3′).', a: '7‑methyl‑G cap → 5′ UTR → Start codon (AUG) → Coding sequence (CDS) → Stop codon (UAA/UAG/UGA) → 3′ UTR → Poly(A) tail' },
+      { q: 'Show the structure of mRNA. Please specify each field with name. ', a: '7‑methyl‑G cap → 5′ UTR → Start codon (AUG) → Coding sequence (CDS) → Stop codon (UAA/UAG/UGA) → 3′ UTR → Poly(A) tail' },
       { q: 'How does the genetic code translate nucleotides to protein?', a: 'Read mRNA in non‑overlapping triplets (codons); each codon specifies one amino acid according to the universal code, from AUG (start/Met) until a stop codon.' },
-      { q: 'What is the role of tRNA (transfer RNA)?', a: 'Each tRNA matches its anticodon to an mRNA codon and delivers the corresponding amino acid to the ribosome, extending the polypeptide chain.' },
+      { q: 'What is the role of tRNA (transfer RNA)?', a: 'TRNA takes amino acids for codons to the ribosome' },
       { q: 'Define a greedy algorithm.', a: 'Constructs a solution step‑by‑step, always choosing the locally optimal option in hopes of reaching a global optimum.' },
       { q: 'Define a branch‑and‑bound algorithm.', a: 'Explores the search tree while pruning branches that cannot out‑score the best solution found, using upper/lower bounds.' },
       { q: 'Define dynamic programming.', a: 'Solves overlapping sub‑problems once, stores their results, and combines them to build an optimal global solution.' },
